@@ -1,4 +1,4 @@
-﻿/**
+/**
  * UI页面生成模块 - 完整版本
  * 包含所有原版功能：搜索、导入导出、二维码、编辑删除等
  * 支持代码分割和懒加载优化
@@ -6,6 +6,7 @@
 
 import { getStyles } from './styles/index.js';
 import { getScripts, getCoreScripts } from './scripts/index.js';
+import { dialogIcon } from './dialogIcons.js';
 import { APP_VERSION } from '../utils/version.js';
 
 /**
@@ -83,7 +84,7 @@ function getHTMLStart() {
   <!-- Security -->
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-  <!-- Theme Initialization - Must run before CSS to prevent FOUC -->
+  <!-- Theme & Language Initialization - Must run before CSS to prevent FOUC -->
   <script>
     (function() {
       try {
@@ -93,6 +94,16 @@ function getHTMLStart() {
         // 设置主题：dark 强制深色，light 强制浅色，auto 跟随系统
         const dataTheme = (theme === 'dark' || (theme === 'auto' && prefersDark)) ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', dataTheme);
+
+        let lang = localStorage.getItem('language') || 'auto';
+        if (lang === 'auto') {
+          const navLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+          if (navLang.startsWith('zh-tw') || navLang.startsWith('zh-hk') || navLang.startsWith('zh-mo') || navLang.includes('hant')) lang = 'zh-TW';
+          else if (navLang.startsWith('zh')) lang = 'zh-CN';
+          else if (navLang.startsWith('en')) lang = 'en';
+          else lang = 'zh-CN';
+        }
+        document.documentElement.setAttribute('lang', lang);
       } catch (e) {
         // Fallback to light theme if localStorage access fails
         document.documentElement.setAttribute('data-theme', 'light');
@@ -131,7 +142,7 @@ function getHTMLStart() {
  */
 function getHTMLBody() {
 	return `
-<body>
+<body class="fluent-app">
   <div class="container">
     <div class="content">
       <div
@@ -143,13 +154,14 @@ function getHTMLBody() {
         hidden
       >
         <div class="clock-warning-message">
-          <span class="clock-warning-icon" aria-hidden="true">⚠</span>
-          <span id="clockWarningText" class="clock-warning-text">本地时间可能不准确，验证码可能无效。</span>
+          <span class="clock-warning-icon" aria-hidden="true">${dialogIcon('warning')}</span>
+          <span id="clockWarningText" class="clock-warning-text" data-i18n="clockWarningText">本地时间可能不准确，验证码可能无效。</span>
         </div>
         <button
           type="button"
           id="clockSyncRetryButton"
           class="clock-sync-retry-button"
+          data-i18n="clockSyncRetryButton"
           onclick="retryClockSync()"
         >重新校时</button>
       </div>
@@ -163,12 +175,13 @@ function getHTMLBody() {
           <!-- 搜索框和操作按钮的水平布局 -->
           <div class="search-action-row">
           <div class="search-input-wrapper">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon" aria-hidden="true">${dialogIcon('search')}</span>
             <input type="search"
                    id="searchInput"
                    name="search-query"
                    class="search-input"
                    placeholder="搜索服务或账户名称"
+                   data-i18n-placeholder="searchInputPlaceholder"
                    oninput="scheduleSecretFilter(this.value)"
                    autocomplete="off"
                    autocorrect="off"
@@ -176,50 +189,51 @@ function getHTMLBody() {
                    spellcheck="false"
                    role="searchbox"
                    aria-label="搜索2FA密钥"
+                   data-i18n-aria-label="searchInputAriaLabel"
                    data-form-type="other"
                    data-lpignore="true"
                    data-1p-ignore="true"
                    data-bwignore="true"
                    readonly
                    onfocus="this.removeAttribute('readonly')">
-            <button class="search-clear" id="searchClear" onclick="clearSearch()" style="display: none;">✕</button>
+            <button class="search-clear" aria-label="清除搜索" data-i18n-aria-label="searchClearAriaLabel" id="searchClear" onclick="clearSearch()" style="display: none;">${dialogIcon('close')}</button>
       </div>
           <div class="sort-controls">
             <details class="sort-dropdown" id="sortDropdown">
-              <summary class="sort-trigger" aria-label="显示与排序" title="显示与排序">
+              <summary class="sort-trigger" aria-label="显示与排序" title="显示与排序" data-i18n-aria-label="sortTriggerLabel" data-i18n-title="sortTriggerLabel">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M3 6h18"></path>
                   <path d="M6 12h12"></path>
                   <path d="M10 18h4"></path>
                 </svg>
-                <span class="sort-trigger-label">显示与排序</span>
+                <span class="sort-trigger-label" data-i18n="sortTriggerLabel">显示与排序</span>
               </summary>
               <div class="sort-menu" aria-label="显示与排序选项">
                 <div class="sort-menu-section">
-                  <div class="sort-menu-label" id="viewModeLabel">显示方式</div>
+                  <div class="sort-menu-label" id="viewModeLabel" data-i18n="viewModeLabel">显示方式</div>
                   <div class="view-mode-segmented" role="group" aria-labelledby="viewModeLabel">
-                    <button type="button" class="view-mode-option active" data-view-mode="grouped" aria-pressed="true" onclick="selectViewMode('grouped')">智能聚合</button>
-                    <button type="button" class="view-mode-option" data-view-mode="flat" aria-pressed="false" onclick="selectViewMode('flat')">全部平铺</button>
+                    <button type="button" class="view-mode-option active" data-view-mode="grouped" aria-pressed="true" data-i18n="viewModeGrouped" onclick="selectViewMode('grouped')">智能聚合</button>
+                    <button type="button" class="view-mode-option" data-view-mode="flat" aria-pressed="false" data-i18n="viewModeFlat" onclick="selectViewMode('flat')">全部平铺</button>
                   </div>
                 </div>
                 <div class="sort-menu-divider"></div>
                 <div class="sort-menu-section group-sort-only" id="groupSortSection">
-                  <div class="sort-menu-label" id="groupSortLabel">聚合分组</div>
+                  <div class="sort-menu-label" id="groupSortLabel" data-i18n="groupSortLabel">聚合分组</div>
                   <div class="view-mode-segmented" role="group" aria-labelledby="groupSortLabel">
-                    <button type="button" class="group-sort-option active" data-group-sort="name-asc" aria-pressed="true" onclick="selectGroupSort('name-asc')">名称 A-Z</button>
-                    <button type="button" class="group-sort-option" data-group-sort="name-desc" aria-pressed="false" onclick="selectGroupSort('name-desc')">名称 Z-A</button>
+                    <button type="button" class="group-sort-option active" data-group-sort="name-asc" aria-pressed="true" data-i18n="groupSortNameAsc" onclick="selectGroupSort('name-asc')">名称 A-Z</button>
+                    <button type="button" class="group-sort-option" data-group-sort="name-desc" aria-pressed="false" data-i18n="groupSortNameDesc" onclick="selectGroupSort('name-desc')">名称 Z-A</button>
                   </div>
                 </div>
                 <div class="sort-menu-divider group-sort-only"></div>
                 <div class="sort-menu-section">
-                  <div class="sort-menu-label" id="sortModeLabel">组内排序</div>
+                  <div class="sort-menu-label" data-i18n="sortModeLabel" id="sortModeLabel">组内排序</div>
                   <div class="sort-options" role="group" aria-labelledby="sortModeLabel">
-                    <button type="button" aria-pressed="true" class="sort-option active" data-sort="oldest-first" onclick="selectSort('oldest-first')">最早添加</button>
-                    <button type="button" aria-pressed="false" class="sort-option" data-sort="newest-first" onclick="selectSort('newest-first')">最晚添加</button>
-                    <button type="button" aria-pressed="false" class="sort-option flat-sort-only" data-sort="name-asc" onclick="selectSort('name-asc')">服务名称 A-Z</button>
-                    <button type="button" aria-pressed="false" class="sort-option flat-sort-only" data-sort="name-desc" onclick="selectSort('name-desc')">服务名称 Z-A</button>
-                    <button type="button" aria-pressed="false" class="sort-option" data-sort="account-asc" onclick="selectSort('account-asc')">账户名称 A-Z</button>
-                    <button type="button" aria-pressed="false" class="sort-option" data-sort="account-desc" onclick="selectSort('account-desc')">账户名称 Z-A</button>
+                    <button type="button" aria-pressed="true" class="sort-option active" data-sort="oldest-first" data-i18n="sortOldestFirst" onclick="selectSort('oldest-first')">最早添加</button>
+                    <button type="button" aria-pressed="false" class="sort-option" data-sort="newest-first" data-i18n="sortNewestFirst" onclick="selectSort('newest-first')">最晚添加</button>
+                    <button type="button" aria-pressed="false" class="sort-option flat-sort-only" data-sort="name-asc" data-i18n="sortServiceNameAsc" onclick="selectSort('name-asc')">服务名称 A-Z</button>
+                    <button type="button" aria-pressed="false" class="sort-option flat-sort-only" data-sort="name-desc" data-i18n="sortServiceNameDesc" onclick="selectSort('name-desc')">服务名称 Z-A</button>
+                    <button type="button" aria-pressed="false" class="sort-option" data-sort="account-asc" data-i18n="sortAccountNameAsc" onclick="selectSort('account-asc')">账户名称 A-Z</button>
+                    <button type="button" aria-pressed="false" class="sort-option" data-sort="account-desc" data-i18n="sortAccountNameDesc" onclick="selectSort('account-desc')">账户名称 Z-A</button>
                   </div>
                 </div>
               </div>
@@ -242,7 +256,7 @@ function getHTMLBody() {
       <div class="menu-overlay" id="menuOverlay" onclick="closeActionMenu()"></div>
       
       <div id="loading" class="loading">
-        <div>⏳ 加载中...</div>
+        <div data-i18n="loadingSecrets">正在加载密钥...</div>
       </div>
       
       <div id="secretsList" class="secrets-list" style="display: none;">
@@ -250,24 +264,21 @@ function getHTMLBody() {
       </div>
       
       <div id="emptyState" class="empty-state" style="display: none;">
-        <div class="icon">🔑</div>
-        <h3>还没有密钥</h3>
-        <p>点击上方按钮添加您的第一个2FA密钥</p>
-        <div style="margin-top: 20px; font-size: 12px; color: var(--text-tertiary);">
-          快捷键：Ctrl+D 调试模式 | Ctrl+R 刷新验证码<br>
-          数据存储：Cloudflare Workers KV
-        </div>
+        <div class="icon" aria-hidden="true">${dialogIcon('key')}</div>
+        <h3 data-i18n="emptyTitle">还没有密钥</h3>
+        <p data-i18n="emptyDesc">添加账户的两步验证密钥，在这里获取验证码</p>
+<button type="button" class="workspace-action" data-i18n="emptyAddBtn" onclick="showAddModal()">添加密钥</button>
       </div>
     </div>
   </div>
   
   
   <!-- 二维码扫描器模态框 -->
-  <div id="qrScanModal" class="modal fab-modal">
+  <div id="qrScanModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="qrScanModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>📷 扫描二维码添加密钥</h2>
-        <button class="close-btn" onclick="hideQRScanner()">&times;</button>
+        <h2 id="qrScanModalTitle">扫描二维码添加密钥</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideQRScanner()">${dialogIcon('close')}</button>
       </div>
 
       <div class="scanner-section">
@@ -291,7 +302,7 @@ function getHTMLBody() {
 
         <div id="scannerError" class="scanner-error" style="display: none;">
           <div id="errorMessage"></div>
-          <button class="btn btn-primary" onclick="retryCamera()" style="margin-top: 10px;">🔄 重试摄像头</button>
+          <button class="btn btn-primary" onclick="retryCamera()" style="margin-top: 10px;">重试摄像头</button>
         </div>
 
         <!-- 底部操作区：连续扫描 + 选择图片 + 粘贴截图 -->
@@ -301,38 +312,38 @@ function getHTMLBody() {
             <span>连续扫描</span>
           </label>
           <input type="file" id="qrImageInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
-          <button class="btn btn-info btn-compact" onclick="document.getElementById('qrImageInput').click()">📁 选择图片</button>
-          <button class="btn btn-info btn-compact" onclick="pasteImageForScan()">📋 粘贴截图</button>
+          <button class="btn btn-info btn-compact" onclick="document.getElementById('qrImageInput').click()">选择图片</button>
+          <button class="btn btn-info btn-compact" onclick="pasteImageForScan()">粘贴截图</button>
         </div>
-        <div class="scanner-hint">💡 支持拖拽图片到此处、Ctrl+V 粘贴截图、Google迁移码批量导入</div>
+        <div class="scanner-hint">支持拖拽图片到此处、Ctrl+V 粘贴截图、Google迁移码批量导入</div>
       </div>
     </div>
   </div>
   
   <!-- 添加/编辑密钥模态框 -->
-  <div id="secretModal" class="modal fab-modal">
+  <div id="secretModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="modalTitle">添加新密钥</h2>
-        <button class="close-btn" onclick="hideSecretModal()">&times;</button>
+        <h2 id="modalTitle" data-i18n="addSecretTitle">添加新密钥</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideSecretModal()">${dialogIcon('close')}</button>
       </div>
       
       <form id="secretForm" onsubmit="handleSubmit(event)" autocomplete="off">
         <input type="hidden" id="secretId" value="">
 
         <div class="form-group">
-          <label for="secretName">服务名称 *</label>
-          <input type="text" id="secretName" required placeholder="例如：GitHub, Google, Microsoft" autocomplete="off">
+          <label for="secretName" data-i18n="secretNameLabel">服务名称 *</label>
+          <input type="text" id="secretName" required placeholder="例如：GitHub, Google, Microsoft" data-i18n-placeholder="secretNamePlaceholder" autocomplete="off">
         </div>
 
         <div class="form-group">
-          <label for="secretService">账户名称</label>
-          <input type="text" id="secretService" placeholder="例如：your@email.com 或 用户名" autocomplete="off">
+          <label for="secretService" data-i18n="secretServiceLabel">账户名称</label>
+          <input type="text" id="secretService" placeholder="例如：your@email.com 或 用户名" data-i18n-placeholder="secretServicePlaceholder" autocomplete="off">
         </div>
 
         <div class="form-group">
-          <label for="secretKey">密钥 (Base32) *</label>
-          <input type="text" id="secretKey" required placeholder="输入16位或更长的Base32密钥" autocomplete="off">
+          <label for="secretKey" data-i18n="secretKeyLabel">密钥 (Base32) *</label>
+          <input type="text" id="secretKey" required placeholder="输入16位或更长的Base32密钥" data-i18n-placeholder="secretKeyPlaceholder" autocomplete="off">
         </div>
         
         <!-- 高级参数区域 -->
@@ -340,32 +351,32 @@ function getHTMLBody() {
           <div class="section-header">
             <label>
               <input type="checkbox" id="showAdvanced" onchange="toggleAdvancedOptions()"> 
-              高级设置 (可选)
+              <span data-i18n="advancedOptionsLabel">高级设置 (可选)</span>
             </label>
           </div>
           
           <div id="advancedOptions" class="advanced-options" style="display: none;">
             <div class="form-row">
               <div class="form-group-small">
-                <label for="secretType">🔐 类型</label>
+                <label for="secretType" data-i18n="secretTypeLabel">类型</label>
                 <select id="secretType" onchange="updateAdvancedOptionsForType()">
-                  <option value="TOTP" selected>TOTP (时间基准)</option>
-                  <option value="HOTP">HOTP (计数器基准)</option>
+                  <option value="TOTP" selected data-i18n="secretTypeTotp">TOTP (时间基准)</option>
+                  <option value="HOTP" data-i18n="secretTypeHotp">HOTP (计数器基准)</option>
                 </select>
               </div>
               
               <div class="form-group-small" id="digitsGroup">
-                <label for="secretDigits">🔢 位数</label>
+                <label for="secretDigits" data-i18n="secretDigitsLabel">位数</label>
                 <select id="secretDigits">
-                  <option value="6" selected>6位</option>
-                  <option value="8">8位</option>
+                  <option value="6" selected data-i18n="digitsSix">6位</option>
+                  <option value="8" data-i18n="digitsEight">8位</option>
                 </select>
               </div>
             </div>
             
             <div class="form-row">
               <div class="form-group-small" id="periodGroup">
-                <label for="secretPeriod">⏱️ 周期(秒)</label>
+                <label for="secretPeriod" data-i18n="secretPeriodLabel">周期(秒)</label>
                 <select id="secretPeriod">
                   <option value="30" selected>30秒</option>
                   <option value="60">60秒</option>
@@ -374,7 +385,7 @@ function getHTMLBody() {
               </div>
               
               <div class="form-group-small" id="algorithmGroup">
-                <label for="secretAlgorithm">🔧 算法</label>
+                <label for="secretAlgorithm" data-i18n="secretAlgorithmLabel">算法</label>
                 <select id="secretAlgorithm">
                   <option value="SHA1" selected>SHA1</option>
                   <option value="SHA256">SHA256</option>
@@ -385,31 +396,31 @@ function getHTMLBody() {
             
             <div class="form-row" id="counterRow" style="display: none;">
               <div class="form-group-small" id="counterGroup">
-                <label for="secretCounter">📊 计数器</label>
-                <input type="number" id="secretCounter" value="0" min="0" max="9007199254740991" step="1" placeholder="初始计数器值" autocomplete="off">
+                <label for="secretCounter" data-i18n="secretCounterLabel">计数器</label>
+                <input type="number" id="secretCounter" value="0" min="0" max="9007199254740991" step="1" placeholder="初始计数器值" data-i18n-placeholder="secretCounterPlaceholder" autocomplete="off">
               </div>
             </div>
             
-            <div class="advanced-info" id="advancedInfo">
+            <div class="advanced-info" id="advancedInfo" data-i18n="secretAdvancedHelp">
               大多数2FA应用使用默认设置：TOTP、6位、30秒、SHA1算法
             </div>
           </div>
         </div>
         
         <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="hideSecretModal()">取消</button>
-          <button type="submit" class="btn btn-primary" id="submitBtn">保存</button>
+          <button type="button" class="btn btn-secondary" onclick="hideSecretModal()" data-i18n="cancel">取消</button>
+          <button type="submit" class="btn btn-primary" id="submitBtn" data-i18n="save">保存</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- 批量导入模态框 -->
-  <div id="importModal" class="modal fab-modal">
+  <div id="importModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="importModalTitle">
     <div class="modal-content import-modal-compact">
       <div class="modal-header">
-        <h2>📥 批量导入密钥</h2>
-        <button class="close-btn" onclick="hideImportModal()">&times;</button>
+        <h2 id="importModalTitle">批量导入密钥</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideImportModal()">${dialogIcon('close')}</button>
       </div>
 
       <!-- 隐藏的文件输入 -->
@@ -417,7 +428,7 @@ function getHTMLBody() {
 
       <!-- 智能输入区：文本框支持粘贴和拖拽 -->
       <div class="smart-import-zone" id="smartImportZone">
-        <textarea id="importText" class="import-textarea-smart" rows="6"
+        <textarea aria-label="导入内容" id="importText" class="import-textarea-smart" rows="6"
                   placeholder="在此粘贴内容，或拖拽文件到这里...&#10;&#10;支持 OTPAuth、JSON、CSV、HTML 等格式"
                   autocomplete="off"
                   oninput="autoPreviewImport()"
@@ -429,27 +440,27 @@ function getHTMLBody() {
       <!-- 选择文件按钮 -->
       <div class="import-file-btn-wrapper">
         <button type="button" class="btn btn-info import-file-btn" onclick="document.getElementById('importFileInput').click()">
-          📁 选择文件
+          选择文件
         </button>
         <span class="import-file-hint">支持 TXT, JSON, CSV, HTML, 2FAS, XML, AuthPro, Encrypt</span>
       </div>
 
       <!-- 已选文件信息徽章 -->
       <div class="file-info-badge" id="fileInfoBadge" style="display: none;">
-        <span class="file-icon">📄</span>
+        <span class="file-icon">${dialogIcon('file')}</span>
         <span class="file-name" id="selectedFileName"></span>
         <span class="file-size" id="selectedFileSize"></span>
-        <button type="button" class="file-clear-btn" onclick="clearSelectedFile(event)">✕</button>
+        <button type="button" class="file-clear-btn" aria-label="清除已选文件" onclick="clearSelectedFile(event)">${dialogIcon('close')}</button>
       </div>
 
       <!-- 小提示 -->
       <div class="import-tips">
-        <span class="import-tip">💡 从 Google Authenticator 导入？<a href="javascript:void(0)" onclick="hideImportModal(); showQRScanner();">扫描迁移二维码</a></span>
+        <span class="import-tip">从 Google Authenticator 导入？<a href="javascript:void(0)" onclick="hideImportModal(); showQRScanner();">扫描迁移二维码</a></span>
       </div>
 
       <!-- 格式说明（可折叠） -->
       <details class="import-format-details">
-        <summary>📋 查看支持的格式</summary>
+        <summary>查看支持的格式</summary>
         <div class="import-format-help">
           <p><strong>TXT</strong> Aegis、Ente Auth、WinAuth</p>
           <p><strong>2FAS</strong> 2FAS</p>
@@ -497,52 +508,50 @@ function getHTMLBody() {
       <!-- 操作按钮 -->
       <div class="form-actions import-form-actions">
         <button type="button" class="btn btn-secondary" onclick="hideImportModal()">取消</button>
-        <button type="button" class="btn btn-primary" onclick="executeImport()" id="executeImportBtn" disabled>📥 导入</button>
+        <button type="button" class="btn btn-primary" onclick="executeImport()" id="executeImportBtn" disabled>导入</button>
       </div>
     </div>
   </div>
 
   <!-- 还原配置模态框 -->
-  <div id="restoreModal" class="modal fab-modal">
+  <div id="restoreModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="restoreModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🔄 还原配置</h2>
-        <button class="close-btn" onclick="hideRestoreModal()">&times;</button>
+        <h2 id="restoreModalTitle">还原配置</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideRestoreModal()">${dialogIcon('close')}</button>
       </div>
       
       <div class="restore-instructions">
-        <p>🔄 从备份中选择一个配置进行还原：</p>
+        <p>从备份中选择一个配置进行还原：</p>
         <p>
-          ⚠️ 警告：还原操作将覆盖当前所有密钥，请谨慎操作！
+          警告：还原操作将覆盖当前所有密钥，请谨慎操作！
         </p>
       </div>
       
       <div class="restore-content">
         <div class="backup-list-container">
-          <div class="backup-list-header">
-            <span>📋 选择备份文件</span>
-          </div>
+          <label class="backup-list-header" for="backupSelect">选择备份文件</label>
           <div class="backup-select-wrapper">
             <select id="backupSelect" class="backup-select" onchange="selectBackupFromDropdown()">
               <option value="">请选择备份文件...</option>
             </select>
           </div>
           <div class="backup-actions">
-            <button type="button" class="btn btn-outline" onclick="loadBackupList()" style="padding: 8px 16px; font-size: 12px;">🔄 刷新</button>
-            <button type="button" class="btn btn-outline" onclick="exportSelectedBackup()" id="exportBackupBtn" disabled style="padding: 8px 16px; font-size: 12px;">📥 导出备份</button>
+            <button type="button" class="btn btn-outline" onclick="loadBackupList()">刷新</button>
+            <button type="button" class="btn btn-outline" onclick="exportSelectedBackup()" id="exportBackupBtn" disabled>导出备份</button>
             <input type="file" id="restoreBackupFileInput" accept=".txt,.csv,.json,.html" style="display: none;" onchange="handleRestoreBackupFile(event)">
-            <button type="button" class="btn btn-outline" onclick="document.getElementById('restoreBackupFileInput').click()" style="padding: 8px 16px; font-size: 12px;">📤 上传备份文件</button>
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('restoreBackupFileInput').click()">上传备份文件</button>
           </div>
-          <div id="restoreUploadStatus" style="display: none; margin-top: 8px; font-size: 12px; color: var(--text-secondary);"></div>
+          <div id="restoreUploadStatus" style="display: none; margin-top: 8px; font-size: var(--dialog-caption-size); color: var(--text-secondary);"></div>
           <div class="backup-pagination" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px;">
-            <span id="backupListStatus" style="font-size: 12px; color: var(--text-secondary);"></span>
-            <button type="button" class="btn btn-outline" id="backupLoadMoreBtn" onclick="loadMoreBackupList()" style="display: none; padding: 8px 16px; font-size: 12px;">加载更多</button>
+            <span id="backupListStatus" style="font-size: var(--dialog-caption-size); color: var(--text-secondary);"></span>
+            <button type="button" class="btn btn-outline" id="backupLoadMoreBtn" onclick="loadMoreBackupList()" style="display: none;">加载更多</button>
           </div>
         </div>
         
         <div class="restore-preview" id="restorePreview" style="display: none;">
           <div class="preview-header">
-            <span>📋 备份预览</span>
+            <span>备份预览</span>
           </div>
           <div id="backupPreviewContent" class="backup-preview-content">
             <!-- 备份内容预览将在这里显示 -->
@@ -551,78 +560,78 @@ function getHTMLBody() {
       </div>
       
       <div class="modal-actions">
-        <button type="button" class="btn btn-outline" onclick="hideRestoreModal()" style="padding: 12px 20px; border-radius: 8px; font-size: 14px;">❌ 取消</button>
-        <button type="button" class="btn btn-danger" onclick="confirmRestore()" id="confirmRestoreBtn" disabled style="padding: 12px 20px; border-radius: 8px; font-size: 14px;">🔄 确认还原</button>
+        <button type="button" class="btn btn-outline" onclick="hideRestoreModal()">取消</button>
+        <button type="button" class="btn btn-danger" onclick="confirmRestore()" id="confirmRestoreBtn" disabled>确认还原</button>
       </div>
     </div>
   </div>
   
   <!-- 实用工具模态框 -->
-  <div id="toolsModal" class="modal fab-modal">
+  <div id="toolsModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="toolsModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🔧 实用工具</h2>
-        <button class="close-btn" onclick="hideToolsModal()">&times;</button>
+        <h2 id="toolsModalTitle">实用工具</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideToolsModal()">${dialogIcon('close')}</button>
       </div>
       
       <div class="tools-list">
-        <div class="tool-item" onclick="showQRScanAndDecode()">
-          <div class="tool-icon">🔍</div>
+        <button type="button" class="tool-item" onclick="showQRScanAndDecode()">
+          <div class="tool-icon">${dialogIcon('qr')}</div>
           <div class="tool-content">
             <div class="tool-title">二维码解析</div>
             <div class="tool-desc">扫描并显示二维码内容</div>
           </div>
-        </div>
+        </button>
         
-        <div class="tool-item" onclick="showQRGenerateTool()">
-          <div class="tool-icon">🔄</div>
+        <button type="button" class="tool-item" onclick="showQRGenerateTool()">
+          <div class="tool-icon">${dialogIcon('qr')}</div>
           <div class="tool-content">
             <div class="tool-title">二维码生成</div>
             <div class="tool-desc">将文本转换为二维码</div>
           </div>
-        </div>
+        </button>
 
-        <div class="tool-item" onclick="showBase32Tool()">
-          <div class="tool-icon">🔐</div>
+        <button type="button" class="tool-item" onclick="showBase32Tool()">
+          <div class="tool-icon">${dialogIcon('code')}</div>
           <div class="tool-content">
             <div class="tool-title">Base32 编解码</div>
             <div class="tool-desc">TOTP密钥格式转换工具</div>
           </div>
-        </div>
+        </button>
 
-        <div class="tool-item" onclick="showTimestampTool()">
-          <div class="tool-icon">⏱️</div>
+        <button type="button" class="tool-item" onclick="showTimestampTool()">
+          <div class="tool-icon">${dialogIcon('clock')}</div>
           <div class="tool-content">
             <div class="tool-title">时间戳工具</div>
             <div class="tool-desc">查看TOTP当前时间周期</div>
           </div>
-        </div>
+        </button>
 
-        <div class="tool-item" onclick="showKeyCheckTool()">
-          <div class="tool-icon">✅</div>
+        <button type="button" class="tool-item" onclick="showKeyCheckTool()">
+          <div class="tool-icon">${dialogIcon('check')}</div>
           <div class="tool-content">
             <div class="tool-title">密钥检查器</div>
             <div class="tool-desc">验证密钥是否符合规范</div>
           </div>
-        </div>
+        </button>
 
-        <div class="tool-item" onclick="showKeyGeneratorTool()">
-          <div class="tool-icon">🎲</div>
+        <button type="button" class="tool-item" onclick="showKeyGeneratorTool()">
+          <div class="tool-icon">${dialogIcon('key')}</div>
           <div class="tool-content">
             <div class="tool-title">密钥生成器</div>
             <div class="tool-desc">生成随机TOTP密钥</div>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   </div>
 
   <!-- 二维码生成工具模态框 -->
-  <div id="qrGenerateModal" class="modal fab-modal">
+  <div id="qrGenerateModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="qrGenerateModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🔄 二维码生成</h2>
-        <button class="close-btn" onclick="hideQRGenerateModal()">&times;</button>
+        <h2 id="qrGenerateModalTitle">二维码生成</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideQRGenerateModal()">${dialogIcon('close')}</button>
       </div>
       
       <div class="tool-section">
@@ -632,8 +641,7 @@ function getHTMLBody() {
             id="qrContentInput"
             class="content-input"
             placeholder="请输入要生成二维码的内容"
-            rows="6"
-            style="width: 100%; padding: 12px; border: 2px solid var(--border-primary); border-radius: 8px; font-size: 14px; font-family: monospace; resize: vertical; background: var(--input-bg); color: var(--text-primary);"
+            rows="6" style="width: 100%; font-family: monospace; resize: vertical;"
             autocomplete="off"
           ></textarea>
         </div>
@@ -642,23 +650,23 @@ function getHTMLBody() {
       <div class="tool-section" id="qrResultSection" style="display: none;">
         <div class="section-title">生成的二维码</div>
         <div class="qr-display">
-          <img id="generatedQRCode" class="qr-image" style="max-width: 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-          <div class="qr-tip" style="margin-top: 10px; font-size: 12px; color: var(--text-tertiary);">长按保存图片</div>
+          <img id="generatedQRCode" class="qr-image" style="max-width: 300px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+          <div class="qr-tip" style="margin-top: 10px; font-size: var(--dialog-caption-size); color: var(--text-tertiary);">长按保存图片</div>
         </div>
       </div>
       
-      <div class="form-actions" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border-primary); display: flex; justify-content: center;">
-        <button type="button" class="btn btn-primary" onclick="generateQRCode()" style="padding: 12px 20px; border-radius: 8px; font-size: 14px;">🔄 生成二维码</button>
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" onclick="generateQRCode()">生成二维码</button>
       </div>
     </div>
   </div>
   
   <!-- Base32编解码工具模态框 -->
-  <div id="base32Modal" class="modal fab-modal">
+  <div id="base32Modal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="base32ModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🔐 Base32 编解码</h2>
-        <button class="close-btn" onclick="hideBase32Modal()">&times;</button>
+        <h2 id="base32ModalTitle">Base32 编解码</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideBase32Modal()">${dialogIcon('close')}</button>
       </div>
       
       <div class="tool-section">
@@ -667,15 +675,14 @@ function getHTMLBody() {
           <textarea
             id="plainTextInput"
             placeholder="输入普通文本"
-            rows="4"
-            style="width: 100%; padding: 12px; border: 2px solid var(--border-primary); border-radius: 8px; font-size: 14px; font-family: monospace; resize: vertical; background: var(--input-bg); color: var(--text-primary);"
+            rows="4" style="width: 100%; font-family: monospace; resize: vertical;"
             autocomplete="off"
           ></textarea>
           <div class="button-area" style="margin-top: 10px; display: flex; gap: 10px;">
-            <button class="btn btn-primary" onclick="encodeBase32()" style="padding: 8px 16px; font-size: 13px;">编码</button>
-            <button class="btn btn-info" onclick="copyEncodedText()" style="padding: 8px 16px; font-size: 13px;">复制</button>
+            <button class="btn btn-primary" onclick="encodeBase32()">编码</button>
+            <button class="btn btn-info" onclick="copyEncodedText()">复制</button>
           </div>
-          <div id="encodedResult" class="result-text" style="margin-top: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 6px; font-family: monospace; font-size: 13px; min-height: 0; word-break: break-all; display: none; color: var(--text-primary);"></div>
+          <div id="encodedResult" class="result-text" style="margin-top: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 6px; font-family: monospace; font-size: var(--dialog-caption-size); min-height: 0; word-break: break-all; display: none; color: var(--text-primary);"></div>
         </div>
       </div>
       
@@ -687,15 +694,14 @@ function getHTMLBody() {
           <textarea
             id="base32TextInput"
             placeholder="输入Base32文本"
-            rows="4"
-            style="width: 100%; padding: 12px; border: 2px solid var(--border-primary); border-radius: 8px; font-size: 14px; font-family: monospace; resize: vertical; background: var(--input-bg); color: var(--text-primary);"
+            rows="4" style="width: 100%; font-family: monospace; resize: vertical;"
             autocomplete="off"
           ></textarea>
           <div class="button-area" style="margin-top: 10px; display: flex; gap: 10px;">
-            <button class="btn btn-primary" onclick="decodeBase32()" style="padding: 8px 16px; font-size: 13px;">解码</button>
-            <button class="btn btn-info" onclick="copyDecodedText()" style="padding: 8px 16px; font-size: 13px;">复制</button>
+            <button class="btn btn-primary" onclick="decodeBase32()">解码</button>
+            <button class="btn btn-info" onclick="copyDecodedText()">复制</button>
           </div>
-          <div id="decodedResult" class="result-text" style="margin-top: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 6px; font-family: monospace; font-size: 13px; min-height: 0; word-break: break-all; display: none; color: var(--text-primary);"></div>
+          <div id="decodedResult" class="result-text" style="margin-top: 10px; padding: 10px; background: var(--bg-secondary); border-radius: 6px; font-family: monospace; font-size: var(--dialog-caption-size); min-height: 0; word-break: break-all; display: none; color: var(--text-primary);"></div>
         </div>
       </div>
       
@@ -704,16 +710,16 @@ function getHTMLBody() {
   </div>
   
   <!-- 时间戳工具模态框 -->
-  <div id="timestampModal" class="modal fab-modal">
+  <div id="timestampModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="timestampModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>⏱️ 时间戳工具</h2>
-        <button class="close-btn" onclick="hideTimestampModal()">&times;</button>
+        <h2 id="timestampModalTitle">时间戳工具</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideTimestampModal()">${dialogIcon('close')}</button>
       </div>
       
       <div class="tool-section">
         <div class="section-title">TOTP 时间信息</div>
-        <div class="time-info" style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <div class="time-info" style="background: var(--bg-secondary); padding: 15px; border-radius: 4px; margin-bottom: 15px;">
           <div class="info-item" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
             <span class="label" style="font-weight: 600; color: var(--text-primary);">当前时间戳:</span>
             <span class="value" id="currentTimestamp" style="font-family: monospace; color: var(--text-primary);"></span>
@@ -731,17 +737,17 @@ function getHTMLBody() {
             <span class="value" id="remainingTime" style="font-family: monospace; color: var(--text-primary);"></span>
           </div>
         </div>
-        <div class="progress-bar" style="width: 100%; height: 8px; background: var(--progress-bg); border-radius: 4px; overflow: hidden;">
-          <div id="progressBar" class="progress" style="height: 100%; background: var(--progress-fill); transition: width 0.3s ease;"></div>
+        <div class="progress-bar timestamp-progress-track">
+          <div id="progressBar" class="progress" role="progressbar" aria-label="当前周期剩余时间" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
       </div>
       
       <div class="tool-section">
         <div class="section-title">时间周期设置</div>
         <div class="period-selector" style="display: flex; justify-content: space-between; gap: 10px;">
-          <button class="btn btn-outline" id="period30Btn" onclick="setPeriod(30)" style="padding: 8px 16px; font-size: 13px; border: 2px solid var(--border-primary); background: transparent; border-radius: 6px; color: var(--text-primary);">30秒</button>
-          <button class="btn btn-outline" id="period60Btn" onclick="setPeriod(60)" style="padding: 8px 16px; font-size: 13px; border: 2px solid var(--border-primary); background: transparent; border-radius: 6px; color: var(--text-primary);">60秒</button>
-          <button class="btn btn-outline" id="period120Btn" onclick="setPeriod(120)" style="padding: 8px 16px; font-size: 13px; border: 2px solid var(--border-primary); background: transparent; border-radius: 6px; color: var(--text-primary);">120秒</button>
+          <button class="btn btn-outline" id="period30Btn" onclick="setPeriod(30)">30秒</button>
+          <button class="btn btn-outline" id="period60Btn" onclick="setPeriod(60)">60秒</button>
+          <button class="btn btn-outline" id="period120Btn" onclick="setPeriod(120)">120秒</button>
         </div>
       </div>
       
@@ -750,11 +756,11 @@ function getHTMLBody() {
   </div>
   
   <!-- 密钥检查器模态框 -->
-  <div id="keyCheckModal" class="modal fab-modal">
+  <div id="keyCheckModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="keyCheckModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>✅ 密钥检查器</h2>
-        <button class="close-btn" onclick="hideKeyCheckModal()">&times;</button>
+        <h2 id="keyCheckModalTitle">密钥检查器</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideKeyCheckModal()">${dialogIcon('close')}</button>
       </div>
       
       <div class="tool-section">
@@ -763,17 +769,16 @@ function getHTMLBody() {
           <textarea
             id="keyCheckInput"
             placeholder="请输入要检查的密钥"
-            rows="4"
-            style="width: 100%; padding: 12px; border: 2px solid var(--border-primary); border-radius: 8px; font-size: 14px; font-family: monospace; resize: vertical; background: var(--input-bg); color: var(--text-primary);"
+            rows="4" style="width: 100%; font-family: monospace; resize: vertical;"
             autocomplete="off"
           ></textarea>
-          <button class="btn btn-primary" onclick="checkSecret()" style="margin-top: 10px; padding: 10px 20px; font-size: 14px;">检查密钥</button>
+          <button class="btn btn-primary" onclick="checkSecret()" style="margin-top: 10px;">检查密钥</button>
         </div>
       </div>
       
       <div class="tool-section" id="keyCheckResult" style="display: none;">
         <div class="section-title">检查结果</div>
-        <div id="checkResultContent" class="check-result" style="padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+        <div id="checkResultContent" class="check-result" style="padding: 15px; border-radius: 4px; margin-bottom: 15px;">
           <!-- 结果内容将在这里动态生成 -->
         </div>
       </div>
@@ -783,52 +788,52 @@ function getHTMLBody() {
   </div>
   
   <!-- 二维码解析工具模态框 -->
-  <div id="qrDecodeModal" class="modal fab-modal">
+  <div id="qrDecodeModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="qrDecodeModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🔍 二维码解析</h2>
-        <button class="close-btn" onclick="hideQRDecodeModal()">&times;</button>
+        <h2 id="qrDecodeModalTitle">二维码解析</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideQRDecodeModal()">${dialogIcon('close')}</button>
       </div>
       
       <div class="tool-section">
         <div class="section-title">扫描二维码</div>
         <div class="scan-options" style="display: flex; gap: 10px; margin-bottom: 10px;">
-          <button class="btn btn-primary" onclick="startQRDecodeScanner()" style="flex: 1; padding: 12px; font-size: 14px;">📷 摄像头扫描</button>
-          <button class="btn btn-info" onclick="uploadImageForDecode()" style="flex: 1; padding: 12px; font-size: 14px;">📁 选择图片</button>
-          <button class="btn btn-info" onclick="pasteImageForDecode()" style="flex: 1; padding: 12px; font-size: 14px;">📋 粘贴截图</button>
+          <button class="btn btn-primary" onclick="startQRDecodeScanner()" style="flex: 1;">摄像头扫描</button>
+          <button class="btn btn-info" onclick="uploadImageForDecode()" style="flex: 1;">选择图片</button>
+          <button class="btn btn-info" onclick="pasteImageForDecode()" style="flex: 1;">粘贴截图</button>
         </div>
-        <div class="scanner-hint" style="margin-bottom: 15px;">💡 支持拖拽图片到此处或 Ctrl+V 粘贴截图</div>
+        <div class="scanner-hint" style="margin-bottom: 15px;">支持拖拽图片到此处或 Ctrl+V 粘贴截图</div>
         
         <div id="decodeScannerContainer" style="display: none;">
           <div class="scanner-container" style="position: relative; margin: 15px 0;">
             <div class="video-wrapper">
               <video id="decodeScannerVideo" autoplay playsinline muted></video>
               <div class="scanner-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none;">
-                <div class="scanner-frame" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; height: 60%; border: 2px solid #fff; border-radius: 8px;"></div>
+                <div class="scanner-frame" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; height: 60%; border: 2px solid #fff; border-radius: 4px;"></div>
               </div>
             </div>
           </div>
-          <div id="decodeScannerStatus" class="scanner-status" style="text-align: center; margin: 10px 0; font-size: 14px; color: var(--text-secondary);">正在启动摄像头...</div>
+          <div id="decodeScannerStatus" class="scanner-status" style="text-align: center; margin: 10px 0; font-size: var(--dialog-body-size); color: var(--text-secondary);">正在启动摄像头...</div>
           <div id="decodeScannerError" class="scanner-error" style="display: none; text-align: center; margin: 10px 0; padding: 10px; background: var(--danger-light); border: 1px solid var(--border-error); border-radius: 6px; color: var(--danger-dark);">
             <div id="decodeErrorMessage"></div>
-            <button class="btn btn-primary" onclick="retryDecodeCamera()" style="margin-top: 10px; padding: 8px 16px; font-size: 13px;">重试</button>
+            <button class="btn btn-primary" onclick="retryDecodeCamera()" style="margin-top: 10px;">重试</button>
           </div>
         </div>
       </div>
       
       <div class="tool-section" id="decodeResultSection" style="display: none;">
         <div class="section-title">解析结果</div>
-        <div class="decode-result" style="background: var(--bg-secondary); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-          <div class="result-content" id="decodeResultContent" style="font-family: monospace; font-size: 14px; word-break: break-all; line-height: 1.5; max-height: 200px; overflow-y: auto; color: var(--text-primary);"></div>
+        <div class="decode-result" style="background: var(--bg-secondary); padding: 15px; border-radius: 4px; margin-bottom: 15px;">
+          <div class="result-content" id="decodeResultContent" style="font-family: monospace; font-size: var(--dialog-body-size); word-break: break-all; line-height: 1.5; max-height: 200px; overflow-y: auto; color: var(--text-primary);"></div>
           <div class="result-actions" style="display: flex; gap: 10px; margin-top: 15px;">
-            <button class="btn btn-info" onclick="copyDecodeResult()" style="flex: 1; padding: 8px 16px; font-size: 13px;">复制内容</button>
-            <button class="btn btn-primary" onclick="generateDecodeQRCode()" style="flex: 1; padding: 8px 16px; font-size: 13px;">生成二维码</button>
+            <button class="btn btn-info" onclick="copyDecodeResult()" style="flex: 1;">复制内容</button>
+            <button class="btn btn-primary" onclick="generateDecodeQRCode()" style="flex: 1;">生成二维码</button>
           </div>
         </div>
         <div class="qr-section" id="decodeQRSection" style="display: none; text-align: center;">
           <div class="qr-title" style="font-weight: 600; margin-bottom: 10px; color: var(--text-primary);">重新生成的二维码</div>
-          <img id="decodeQRCode" class="qr-code" style="max-width: 200px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
-          <div class="qr-tip" style="margin-top: 8px; font-size: 12px; color: var(--text-tertiary);">点击二维码可以预览</div>
+          <img id="decodeQRCode" class="qr-code" style="max-width: 200px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+          <div class="qr-tip" style="margin-top: 8px; font-size: var(--dialog-caption-size); color: var(--text-tertiary);">点击二维码可以预览</div>
         </div>
       </div>
       
@@ -837,11 +842,11 @@ function getHTMLBody() {
   </div>
   
   <!-- 密钥生成器模态框 -->
-  <div id="keyGeneratorModal" class="modal fab-modal">
+  <div id="keyGeneratorModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="keyGeneratorModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🎲 密钥生成器</h2>
-        <button class="close-btn" onclick="hideKeyGeneratorModal()">&times;</button>
+        <h2 id="keyGeneratorModalTitle">密钥生成器</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideKeyGeneratorModal()">${dialogIcon('close')}</button>
       </div>
       
       <div class="tool-section">
@@ -849,21 +854,21 @@ function getHTMLBody() {
           <div class="option-item" style="margin-bottom: 10px;">
             <div class="option-label" style="font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">密钥长度:</div>
             <div class="radio-group" style="display: flex; justify-content: space-between; gap: 10px;">
-              <button class="btn btn-outline" id="length16Btn" onclick="setKeyLength(16)" style="padding: 8px 16px; font-size: 13px; border: 2px solid var(--border-primary); background: transparent; border-radius: 6px; color: var(--text-primary);">16位</button>
-              <button class="btn btn-outline" id="length26Btn" onclick="setKeyLength(26)" style="padding: 8px 16px; font-size: 13px; border: 2px solid var(--border-primary); background: transparent; border-radius: 6px; color: var(--text-primary);">26位</button>
-              <button class="btn btn-outline" id="length32Btn" onclick="setKeyLength(32)" style="padding: 8px 16px; font-size: 13px; border: 2px solid var(--border-primary); background: transparent; border-radius: 6px; color: var(--text-primary);">32位</button>
+              <button class="btn btn-outline" id="length16Btn" onclick="setKeyLength(16)">16位</button>
+              <button class="btn btn-outline" id="length26Btn" onclick="setKeyLength(26)">26位</button>
+              <button class="btn btn-outline" id="length32Btn" onclick="setKeyLength(32)">32位</button>
             </div>
           </div>
         </div>
-        <button class="btn btn-primary" onclick="generateKey()" style="width: 100%; padding: 12px; font-size: 14px;">生成密钥</button>
+        <button class="btn btn-primary" onclick="generateKey()" style="width: 100%;">生成密钥</button>
       </div>
       
       <div class="tool-section" id="keyResultSection" style="display: none;">
         <div class="section-title">生成结果</div>
-        <div class="key-result" style="padding: 15px; border-radius: 8px; margin-bottom: 15px; background: var(--bg-secondary);">
-          <div class="key-text" id="generatedKeyText" style="font-family: monospace; font-size: 16px; font-weight: 600; text-align: center; margin-bottom: 15px; word-break: break-all; color: var(--text-primary);"></div>
+        <div class="key-result" style="padding: 15px; border-radius: 4px; margin-bottom: 15px; background: var(--bg-secondary);">
+          <div class="key-text" id="generatedKeyText" style="font-family: monospace; font-size: var(--dialog-body-size); font-weight: 600; text-align: center; margin-bottom: 15px; word-break: break-all; color: var(--text-primary);"></div>
           <div class="key-actions" style="display: flex; justify-content: center;">
-            <button class="btn btn-info" onclick="copyGeneratedKey()" style="padding: 8px 24px; font-size: 13px;">复制密钥</button>
+            <button class="btn btn-info" onclick="copyGeneratedKey()">复制密钥</button>
           </div>
         </div>
       </div>
@@ -873,11 +878,11 @@ function getHTMLBody() {
   </div>
 
   <!-- WebDAV 同步配置模态框 -->
-  <div id="webdavModal" class="modal fab-modal">
+  <div id="webdavModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="webdavModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>☁️ WebDAV 同步</h2>
-        <button class="close-btn" onclick="hideWebdavModal()">&times;</button>
+        <h2 id="webdavModalTitle">WebDAV 同步</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideWebdavModal()">${dialogIcon('close')}</button>
       </div>
 
       <div class="tool-section">
@@ -885,47 +890,47 @@ function getHTMLBody() {
         <div id="webdavDestinationList" style="margin-bottom: 15px;"></div>
 
         <!-- 添加按钮 -->
-        <button class="btn btn-primary" id="webdavAddBtn" onclick="showWebdavForm()" style="width: 100%; padding: 10px; font-size: 13px; margin-bottom: 15px;">+ 添加 WebDAV 目标</button>
+        <button class="btn btn-primary" id="webdavAddBtn" onclick="showWebdavForm()" style="width: 100%; margin-bottom: 15px;">+ 添加 WebDAV 目标</button>
 
         <!-- 配置表单（默认隐藏） -->
         <div id="webdavFormArea" style="display: none;">
-          <div style="padding: 15px; border-radius: 8px; border: 1px solid var(--border-primary); background: var(--bg-secondary); margin-bottom: 12px;">
+          <div class="dialog-sync-form">
             <input type="hidden" id="webdavEditId" value="" />
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">目标名称</label>
-              <input type="text" id="webdavName" class="secret-input" placeholder="例如：家庭NAS、云盘" maxlength="30" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="webdavName" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">目标名称</label>
+              <input type="text" id="webdavName" class="secret-input" placeholder="例如：家庭NAS、云盘" maxlength="30" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">服务器地址</label>
-              <input type="url" id="webdavUrl" class="secret-input" placeholder="https://your-server.com/dav/" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="webdavUrl" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">服务器地址</label>
+              <input type="url" id="webdavUrl" class="secret-input" placeholder="https://your-server.com/dav/" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">用户名</label>
-              <input type="text" id="webdavUsername" class="secret-input" placeholder="请输入用户名" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="webdavUsername" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">用户名</label>
+              <input type="text" id="webdavUsername" class="secret-input" placeholder="请输入用户名" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">密码</label>
-              <input type="password" id="webdavPassword" class="secret-input" placeholder="请输入密码" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="webdavPassword" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">密码</label>
+              <input type="password" id="webdavPassword" class="secret-input" placeholder="请输入密码" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 15px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">远程路径</label>
-              <input type="text" id="webdavPath" class="secret-input" value="/" placeholder="/" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="webdavPath" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">远程路径</label>
+              <input type="text" id="webdavPath" class="secret-input" value="/" placeholder="/" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-              <button class="btn btn-info" id="webdavTestBtn" onclick="testWebdavConnection()" style="flex: 1; padding: 10px; font-size: 13px;">测试连接</button>
-              <button class="btn btn-primary" id="webdavSaveBtn" onclick="saveWebdavConfig()" style="flex: 1; padding: 10px; font-size: 13px;">保存</button>
+              <button class="btn btn-info" id="webdavTestBtn" onclick="testWebdavConnection()" style="flex: 1;">测试连接</button>
+              <button class="btn btn-primary" id="webdavSaveBtn" onclick="saveWebdavConfig()" style="flex: 1;">保存</button>
             </div>
-            <button class="btn" onclick="hideWebdavForm()" style="width: 100%; padding: 10px; font-size: 13px; background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-primary);">取消</button>
+            <button class="btn" onclick="hideWebdavForm()" style="width: 100%;">取消</button>
           </div>
         </div>
 
-        <div class="advanced-info" style="margin-top: 10px; padding: 12px; border-radius: 6px; font-size: 12px; color: var(--text-tertiary); background: var(--bg-secondary); line-height: 1.6;">
+        <div class="advanced-info">
           配置 WebDAV 后，每次备份（事件驱动、定时、手动）都会自动推送到所有已启用的 WebDAV 目标。支持 NextCloud、Alist 等。
         </div>
       </div>
@@ -934,11 +939,11 @@ function getHTMLBody() {
   </div>
 
   <!-- S3 同步配置模态框 -->
-  <div id="s3Modal" class="modal fab-modal">
+  <div id="s3Modal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="s3ModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🪣 S3 同步</h2>
-        <button class="close-btn" onclick="hideS3Modal()">&times;</button>
+        <h2 id="s3ModalTitle">S3 同步</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideS3Modal()">${dialogIcon('close')}</button>
       </div>
 
       <div class="tool-section">
@@ -946,57 +951,57 @@ function getHTMLBody() {
         <div id="s3DestinationList" style="margin-bottom: 15px;"></div>
 
         <!-- 添加按钮 -->
-        <button class="btn btn-primary" id="s3AddBtn" onclick="showS3Form()" style="width: 100%; padding: 10px; font-size: 13px; margin-bottom: 15px;">+ 添加 S3 目标</button>
+        <button class="btn btn-primary" id="s3AddBtn" onclick="showS3Form()" style="width: 100%; margin-bottom: 15px;">+ 添加 S3 目标</button>
 
         <!-- 配置表单（默认隐藏） -->
         <div id="s3FormArea" style="display: none;">
-          <div style="padding: 15px; border-radius: 8px; border: 1px solid var(--border-primary); background: var(--bg-secondary); margin-bottom: 12px;">
+          <div class="dialog-sync-form">
             <input type="hidden" id="s3EditId" value="" />
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">目标名称</label>
-              <input type="text" id="s3Name" class="secret-input" placeholder="例如：R2备份、MinIO" maxlength="30" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="s3Name" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">目标名称</label>
+              <input type="text" id="s3Name" class="secret-input" placeholder="例如：R2备份、MinIO" maxlength="30" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">Endpoint</label>
-              <input type="url" id="s3Endpoint" class="secret-input" placeholder="https://s3.amazonaws.com" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="s3Endpoint" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">Endpoint</label>
+              <input type="url" id="s3Endpoint" class="secret-input" placeholder="https://s3.amazonaws.com" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">Bucket</label>
-              <input type="text" id="s3Bucket" class="secret-input" placeholder="my-backup-bucket" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="s3Bucket" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">Bucket</label>
+              <input type="text" id="s3Bucket" class="secret-input" placeholder="my-backup-bucket" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">Region</label>
-              <input type="text" id="s3Region" class="secret-input" value="auto" placeholder="auto" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="s3Region" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">Region</label>
+              <input type="text" id="s3Region" class="secret-input" value="auto" placeholder="auto" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">Access Key ID</label>
-              <input type="text" id="s3AccessKeyId" class="secret-input" placeholder="请输入 Access Key ID" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="s3AccessKeyId" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">Access Key ID</label>
+              <input type="text" id="s3AccessKeyId" class="secret-input" placeholder="请输入 Access Key ID" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">Secret Access Key</label>
-              <input type="password" id="s3SecretAccessKey" class="secret-input" placeholder="请输入 Secret Access Key" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="s3SecretAccessKey" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">Secret Access Key</label>
+              <input type="password" id="s3SecretAccessKey" class="secret-input" placeholder="请输入 Secret Access Key" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 15px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">存储路径前缀</label>
-              <input type="text" id="s3Prefix" class="secret-input" value="" placeholder="2fa-backup/（可选）" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="s3Prefix" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">存储路径前缀</label>
+              <input type="text" id="s3Prefix" class="secret-input" value="" placeholder="2fa-backup/（可选）" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-              <button class="btn btn-info" id="s3TestBtn" onclick="testS3Connection()" style="flex: 1; padding: 10px; font-size: 13px;">测试连接</button>
-              <button class="btn btn-primary" id="s3SaveBtn" onclick="saveS3Config()" style="flex: 1; padding: 10px; font-size: 13px;">保存</button>
+              <button class="btn btn-info" id="s3TestBtn" onclick="testS3Connection()" style="flex: 1;">测试连接</button>
+              <button class="btn btn-primary" id="s3SaveBtn" onclick="saveS3Config()" style="flex: 1;">保存</button>
             </div>
-            <button class="btn" onclick="hideS3Form()" style="width: 100%; padding: 10px; font-size: 13px; background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-primary);">取消</button>
+            <button class="btn" onclick="hideS3Form()" style="width: 100%;">取消</button>
           </div>
         </div>
 
-        <div class="advanced-info" style="margin-top: 10px; padding: 12px; border-radius: 6px; font-size: 12px; color: var(--text-tertiary); background: var(--bg-secondary); line-height: 1.6;">
+        <div class="advanced-info">
           配置 S3 后，每次备份（事件驱动、定时、手动）都会自动推送到所有已启用的 S3 兼容存储。支持 AWS S3、Cloudflare R2、MinIO、阿里云 OSS 等。
         </div>
       </div>
@@ -1005,43 +1010,43 @@ function getHTMLBody() {
   </div>
 
   <!-- OneDrive 同步配置模态框 -->
-  <div id="oneDriveModal" class="modal fab-modal">
+  <div id="oneDriveModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="oneDriveModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🗂️ OneDrive 同步</h2>
-        <button class="close-btn" onclick="hideOneDriveModal()">&times;</button>
+        <h2 id="oneDriveModalTitle">OneDrive 同步</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideOneDriveModal()">${dialogIcon('close')}</button>
       </div>
 
       <div class="tool-section">
-        <div id="oneDriveOauthWarning" class="advanced-info" style="display:none; margin-bottom: 12px; padding: 12px; border-radius: 6px; font-size: 12px; color: var(--warning-color, #b45309); background: var(--bg-secondary); line-height: 1.6;"></div>
+        <div id="oneDriveOauthWarning" class="advanced-info" style="display:none; margin-bottom: 12px; padding: 12px; border-radius: 6px; font-size: var(--dialog-caption-size); color: var(--warning-color, #b45309); background: var(--bg-secondary); line-height: 1.6;"></div>
 
         <div id="oneDriveDestinationList" style="margin-bottom: 15px;"></div>
 
-        <button class="btn btn-primary" id="oneDriveAddBtn" onclick="showOneDriveForm()" style="width: 100%; padding: 10px; font-size: 13px; margin-bottom: 15px;">+ 添加 OneDrive 目标</button>
+        <button class="btn btn-primary" id="oneDriveAddBtn" onclick="showOneDriveForm()" style="width: 100%; margin-bottom: 15px;">+ 添加 OneDrive 目标</button>
 
         <div id="oneDriveFormArea" style="display: none;">
-          <div style="padding: 15px; border-radius: 8px; border: 1px solid var(--border-primary); background: var(--bg-secondary); margin-bottom: 12px;">
+          <div class="dialog-sync-form">
             <input type="hidden" id="oneDriveEditId" value="" />
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">目标名称</label>
-              <input type="text" id="oneDriveName" class="secret-input" placeholder="例如：工作账户、个人账户" maxlength="30" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="oneDriveName" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">目标名称</label>
+              <input type="text" id="oneDriveName" class="secret-input" placeholder="例如：工作账户、个人账户" maxlength="30" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 15px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">应用目录子路径</label>
-              <input type="text" id="oneDriveFolderPath" class="secret-input" value="/2FA-Backups" placeholder="/2FA-Backups" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="oneDriveFolderPath" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">应用目录子路径</label>
+              <input type="text" id="oneDriveFolderPath" class="secret-input" value="/2FA-Backups" placeholder="/2FA-Backups" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-              <button class="btn btn-info" id="oneDriveAuthorizeBtn" onclick="authorizeOneDriveDest(document.getElementById('oneDriveEditId').value)" style="flex: 1; padding: 10px; font-size: 13px;">保存并授权</button>
-              <button class="btn btn-primary" id="oneDriveSaveBtn" onclick="saveOneDriveConfig()" style="flex: 1; padding: 10px; font-size: 13px;">保存</button>
+              <button class="btn btn-info" id="oneDriveAuthorizeBtn" onclick="authorizeOneDriveDest(document.getElementById('oneDriveEditId').value)" style="flex: 1;">保存并授权</button>
+              <button class="btn btn-primary" id="oneDriveSaveBtn" onclick="saveOneDriveConfig()" style="flex: 1;">保存</button>
             </div>
-            <button class="btn" onclick="hideOneDriveForm()" style="width: 100%; padding: 10px; font-size: 13px; background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-primary);">取消</button>
+            <button class="btn" onclick="hideOneDriveForm()" style="width: 100%;">取消</button>
           </div>
         </div>
 
-        <div class="advanced-info" style="margin-top: 10px; padding: 12px; border-radius: 6px; font-size: 12px; color: var(--text-tertiary); background: var(--bg-secondary); line-height: 1.6;">
+        <div class="advanced-info">
           OneDrive 使用 Microsoft Graph 应用专用目录保存备份。授权成功后，每次备份都会自动推送到该目录下的指定子路径。
         </div>
       </div>
@@ -1050,43 +1055,43 @@ function getHTMLBody() {
   </div>
 
   <!-- Google Drive 同步配置模态框 -->
-  <div id="googleDriveModal" class="modal fab-modal">
+  <div id="googleDriveModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="googleDriveModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>📁 Google Drive 同步</h2>
-        <button class="close-btn" onclick="hideGoogleDriveModal()">&times;</button>
+        <h2 id="googleDriveModalTitle">Google Drive 同步</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideGoogleDriveModal()">${dialogIcon('close')}</button>
       </div>
 
       <div class="tool-section">
-        <div id="googleDriveOauthWarning" class="advanced-info" style="display:none; margin-bottom: 12px; padding: 12px; border-radius: 6px; font-size: 12px; color: var(--warning-color, #b45309); background: var(--bg-secondary); line-height: 1.6;"></div>
+        <div id="googleDriveOauthWarning" class="advanced-info" style="display:none; margin-bottom: 12px; padding: 12px; border-radius: 6px; font-size: var(--dialog-caption-size); color: var(--warning-color, #b45309); background: var(--bg-secondary); line-height: 1.6;"></div>
 
         <div id="googleDriveDestinationList" style="margin-bottom: 15px;"></div>
 
-        <button class="btn btn-primary" id="googleDriveAddBtn" onclick="showGoogleDriveForm()" style="width: 100%; padding: 10px; font-size: 13px; margin-bottom: 15px;">+ 添加 Google Drive 目标</button>
+        <button class="btn btn-primary" id="googleDriveAddBtn" onclick="showGoogleDriveForm()" style="width: 100%; margin-bottom: 15px;">+ 添加 Google Drive 目标</button>
 
         <div id="googleDriveFormArea" style="display: none;">
-          <div style="padding: 15px; border-radius: 8px; border: 1px solid var(--border-primary); background: var(--bg-secondary); margin-bottom: 12px;">
+          <div class="dialog-sync-form">
             <input type="hidden" id="googleDriveEditId" value="" />
 
             <div style="margin-bottom: 12px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">目标名称</label>
-              <input type="text" id="googleDriveName" class="secret-input" placeholder="例如：主备份盘、个人盘" maxlength="30" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="googleDriveName" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">目标名称</label>
+              <input type="text" id="googleDriveName" class="secret-input" placeholder="例如：主备份盘、个人盘" maxlength="30" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="margin-bottom: 15px;">
-              <label style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: 13px;">备份目录</label>
-              <input type="text" id="googleDriveFolderPath" class="secret-input" value="/2FA-Backups" placeholder="/2FA-Backups" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border-primary); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;" />
+              <label for="googleDriveFolderPath" style="display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-primary); font-size: var(--dialog-body-size);">备份目录</label>
+              <input type="text" id="googleDriveFolderPath" class="secret-input" value="/2FA-Backups" placeholder="/2FA-Backups" style="width: 100%; box-sizing: border-box;" />
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-              <button class="btn btn-info" id="googleDriveAuthorizeBtn" onclick="authorizeGoogleDriveDest(document.getElementById('googleDriveEditId').value)" style="flex: 1; padding: 10px; font-size: 13px;">保存并授权</button>
-              <button class="btn btn-primary" id="googleDriveSaveBtn" onclick="saveGoogleDriveConfig()" style="flex: 1; padding: 10px; font-size: 13px;">保存</button>
+              <button class="btn btn-info" id="googleDriveAuthorizeBtn" onclick="authorizeGoogleDriveDest(document.getElementById('googleDriveEditId').value)" style="flex: 1;">保存并授权</button>
+              <button class="btn btn-primary" id="googleDriveSaveBtn" onclick="saveGoogleDriveConfig()" style="flex: 1;">保存</button>
             </div>
-            <button class="btn" onclick="hideGoogleDriveForm()" style="width: 100%; padding: 10px; font-size: 13px; background: var(--bg-primary); color: var(--text-secondary); border: 1px solid var(--border-primary);">取消</button>
+            <button class="btn" onclick="hideGoogleDriveForm()" style="width: 100%;">取消</button>
           </div>
         </div>
 
-        <div class="advanced-info" style="margin-top: 10px; padding: 12px; border-radius: 6px; font-size: 12px; color: var(--text-tertiary); background: var(--bg-secondary); line-height: 1.6;">
+        <div class="advanced-info">
           Google Drive 授权成功后，会自动在你的个人网盘目录下创建并更新备份文件。推送失败不会影响本地备份。
         </div>
       </div>
@@ -1095,64 +1100,64 @@ function getHTMLBody() {
   </div>
 
   <!-- 设置模态框 -->
-  <div id="settingsModal" class="modal fab-modal-lg">
+  <div id="settingsModal" class="modal fab-modal-lg" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
     <div class="modal-content settings-modal-content">
       <div class="modal-header">
-        <h2>设置</h2>
-        <button class="close-btn" onclick="hideSettingsModal()">&times;</button>
+        <h2 id="settingsModalTitle" data-i18n="settingsTitle">设置</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideSettingsModal()">${dialogIcon('close')}</button>
       </div>
       <div class="settings-layout">
         <div class="settings-tabs">
-          <div class="settings-tab active" data-tab="security" onclick="switchSettingsTab('security')">
-            <span class="settings-tab-icon">🔒</span>
-            <span class="settings-tab-text">账户安全</span>
-          </div>
-          <div class="settings-tab" data-tab="sync" onclick="switchSettingsTab('sync')">
-            <span class="settings-tab-icon">☁️</span>
-            <span class="settings-tab-text">同步设置</span>
-          </div>
-          <div class="settings-tab" data-tab="preferences" onclick="switchSettingsTab('preferences')">
-            <span class="settings-tab-icon">🎨</span>
-            <span class="settings-tab-text">偏好设置</span>
-          </div>
+          <button type="button" class="settings-tab active" data-tab="security" onclick="switchSettingsTab('security')">
+            <span class="settings-tab-icon">${dialogIcon('lock')}</span>
+            <span class="settings-tab-text" data-i18n="settingsTabSecurity">账户安全</span>
+          </button>
+          <button type="button" class="settings-tab" data-tab="sync" onclick="switchSettingsTab('sync')">
+            <span class="settings-tab-icon">${dialogIcon('cloud')}</span>
+            <span class="settings-tab-text" data-i18n="settingsTabSync">同步设置</span>
+          </button>
+          <button type="button" class="settings-tab" data-tab="preferences" onclick="switchSettingsTab('preferences')">
+            <span class="settings-tab-icon">${dialogIcon('sliders')}</span>
+            <span class="settings-tab-text" data-i18n="settingsTabPreferences">偏好设置</span>
+          </button>
         </div>
         <div class="settings-content">
           <!-- 账户安全面板 -->
           <div class="settings-panel active" data-panel="security">
             <div class="settings-section">
-              <h3 class="settings-section-title">修改密码</h3>
+              <h3 class="settings-section-title" data-i18n="changePasswordTitle">修改密码</h3>
               <div class="settings-form">
                 <div class="settings-field">
-                  <label>当前密码</label>
-                  <input type="password" id="settingsCurrentPassword" placeholder="请输入当前密码" autocomplete="current-password" />
+                  <label for="settingsCurrentPassword" data-i18n="currentPasswordLabel">当前密码</label>
+                  <input type="password" id="settingsCurrentPassword" placeholder="请输入当前密码" data-i18n-placeholder="currentPasswordPlaceholder" autocomplete="current-password" />
                 </div>
                 <div class="settings-field">
-                  <label>新密码</label>
-                  <input type="password" id="settingsNewPassword" placeholder="请输入新密码" autocomplete="new-password" />
+                  <label for="settingsNewPassword" data-i18n="newPasswordLabel">新密码</label>
+                  <input type="password" id="settingsNewPassword" placeholder="请输入新密码" data-i18n-placeholder="newPasswordPlaceholder" autocomplete="new-password" />
                 </div>
                 <div class="settings-field">
-                  <label>确认新密码</label>
-                  <input type="password" id="settingsConfirmPassword" placeholder="请再次输入新密码" autocomplete="new-password" />
+                  <label for="settingsConfirmPassword" data-i18n="confirmPasswordLabel">确认新密码</label>
+                  <input type="password" id="settingsConfirmPassword" placeholder="请再次输入新密码" data-i18n-placeholder="confirmPasswordPlaceholder" autocomplete="new-password" />
                 </div>
                 <div id="changePasswordResult" class="change-password-result" style="display: none;"></div>
-                <button class="btn btn-primary" id="changePasswordBtn" onclick="changePassword()" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 8px;">修改密码</button>
+                <button class="btn btn-primary" id="changePasswordBtn" onclick="changePassword()" style="width: 100%;" data-i18n="changePasswordBtn">修改密码</button>
               </div>
             </div>
             <div class="settings-divider"></div>
             <div class="settings-section">
-              <h3 class="settings-section-title">退出登录</h3>
-              <p class="settings-desc">退出当前账户，需要重新输入密码登录。</p>
-              <button class="btn btn-danger" onclick="logout()" style="width: 100%; padding: 10px; font-size: 14px; border-radius: 8px;">退出登录</button>
+              <h3 class="settings-section-title" data-i18n="logoutTitle">退出登录</h3>
+              <p class="settings-desc" data-i18n="logoutDesc">退出当前账户，需要重新输入密码登录。</p>
+              <button class="btn btn-danger" onclick="logout()" style="width: 100%;" data-i18n="logoutBtn">退出登录</button>
             </div>
           </div>
 
           <!-- 同步设置面板 -->
           <div class="settings-panel" data-panel="sync">
             <div class="settings-section">
-              <div class="sync-card" onclick="openWebdavFromSettings()">
+              <button type="button" class="sync-card" onclick="openWebdavFromSettings()">
                 <div class="sync-card-header">
                   <div class="sync-card-info">
-                    <span class="sync-card-icon">☁️</span>
+                    <span class="sync-card-icon">${dialogIcon('cloud')}</span>
                     <div>
                       <div class="sync-card-title">WebDAV 同步</div>
                       <div class="sync-card-desc">自动推送备份到 WebDAV 服务器</div>
@@ -1160,13 +1165,13 @@ function getHTMLBody() {
                   </div>
                   <span id="settingsWebdavStatus" class="sync-status not-configured">未配置</span>
                 </div>
-              </div>
+              </button>
             </div>
             <div class="settings-section">
-              <div class="sync-card" onclick="openS3FromSettings()">
+              <button type="button" class="sync-card" onclick="openS3FromSettings()">
                 <div class="sync-card-header">
                   <div class="sync-card-info">
-                    <span class="sync-card-icon">🪣</span>
+                    <span class="sync-card-icon">${dialogIcon('box')}</span>
                     <div>
                       <div class="sync-card-title">S3 同步</div>
                       <div class="sync-card-desc">自动推送备份到 S3 兼容存储</div>
@@ -1174,13 +1179,13 @@ function getHTMLBody() {
                   </div>
                   <span id="settingsS3Status" class="sync-status not-configured">未配置</span>
                 </div>
-              </div>
+              </button>
             </div>
             <div class="settings-section">
-              <div class="sync-card" onclick="openOneDriveFromSettings()">
+              <button type="button" class="sync-card" onclick="openOneDriveFromSettings()">
                 <div class="sync-card-header">
                   <div class="sync-card-info">
-                    <span class="sync-card-icon">🗂️</span>
+                    <span class="sync-card-icon">${dialogIcon('cloud')}</span>
                     <div>
                       <div class="sync-card-title">OneDrive 同步</div>
                       <div class="sync-card-desc">自动推送备份到 Microsoft OneDrive</div>
@@ -1188,13 +1193,13 @@ function getHTMLBody() {
                   </div>
                   <span id="settingsOneDriveStatus" class="sync-status not-configured">未配置</span>
                 </div>
-              </div>
+              </button>
             </div>
             <div class="settings-section">
-              <div class="sync-card" onclick="openGoogleDriveFromSettings()">
+              <button type="button" class="sync-card" onclick="openGoogleDriveFromSettings()">
                 <div class="sync-card-header">
                   <div class="sync-card-info">
-                    <span class="sync-card-icon">📁</span>
+                    <span class="sync-card-icon">${dialogIcon('folder')}</span>
                     <div>
                       <div class="sync-card-title">Google Drive 同步</div>
                       <div class="sync-card-desc">自动推送备份到 Google Drive</div>
@@ -1202,7 +1207,7 @@ function getHTMLBody() {
                   </div>
                   <span id="settingsGoogleDriveStatus" class="sync-status not-configured">未配置</span>
                 </div>
-              </div>
+              </button>
             </div>
             <div class="settings-info-box">
               配置同步后，每次备份（事件驱动、定时、手动）都会自动推送到远程存储。推送失败不影响本地备份。
@@ -1212,21 +1217,31 @@ function getHTMLBody() {
           <!-- 偏好设置面板 -->
           <div class="settings-panel" data-panel="preferences">
             <div class="settings-section">
-              <h3 class="settings-section-title">主题模式</h3>
+              <h3 class="settings-section-title" data-i18n="themeTitle">主题模式</h3>
               <div class="theme-options">
                 <label class="theme-option">
                   <input type="radio" name="settingsTheme" value="light" onchange="applyThemeFromSettings('light')" />
-                  <span class="theme-option-label">☀️ 浅色模式</span>
+                  <span class="theme-option-label" data-i18n="themeLight">${dialogIcon('sun')} 浅色模式</span>
                 </label>
                 <label class="theme-option">
                   <input type="radio" name="settingsTheme" value="dark" onchange="applyThemeFromSettings('dark')" />
-                  <span class="theme-option-label">🌙 深色模式</span>
+                  <span class="theme-option-label" data-i18n="themeDark">${dialogIcon('moon')} 深色模式</span>
                 </label>
                 <label class="theme-option">
                   <input type="radio" name="settingsTheme" value="auto" onchange="applyThemeFromSettings('auto')" />
-                  <span class="theme-option-label">🌓 跟随系统</span>
+                  <span class="theme-option-label" data-i18n="themeAuto">${dialogIcon('screen')} 跟随系统</span>
                 </label>
               </div>
+            </div>
+            <div class="settings-divider"></div>
+            <div class="settings-section">
+              <h3 class="settings-section-title" id="settingsLanguageTitle" data-i18n="languageTitle">界面语言</h3>
+              <select id="settingsLanguage" class="settings-select" aria-labelledby="settingsLanguageTitle" onchange="saveLanguagePreference(this.value)">
+                <option value="auto">跟随系统 (Auto)</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+              </select>
             </div>
             <div class="settings-divider"></div>
             <div class="settings-section">
@@ -1242,7 +1257,7 @@ function getHTMLBody() {
             <div class="settings-section">
               <h3 class="settings-section-title">批量导出和备份导出偏好格式</h3>
               <p class="settings-desc">设置批量导出和“导出备份”共用的默认格式。它会影响这两个导出弹窗的默认操作，也会用于新创建的手动备份、自动备份和远程自动备份文件。</p>
-              <select id="settingsDefaultExportFormat" class="settings-select" onchange="saveDefaultExportFormat()">
+              <select aria-label="默认导出格式" id="settingsDefaultExportFormat" class="settings-select" onchange="saveDefaultExportFormat()">
                 <option value="json">JSON</option>
                 <option value="txt">TXT 文本</option>
                 <option value="csv">CSV 表格</option>
@@ -1252,43 +1267,42 @@ function getHTMLBody() {
             <div class="settings-divider"></div>
             <div class="settings-section">
               <h3 class="settings-section-title">登录有效期</h3>
-              <p class="settings-desc">设置登录后 Token 的有效天数，修改后下次登录生效。</p>
+              <p class="settings-desc">设置登录状态保留的天数，修改后自动保存，下次登录生效。</p>
               <div class="settings-inline-group">
-                <input type="number" id="settingsJwtExpiryDays" class="settings-input" min="1" max="365" value="30" />
+                <input type="number" aria-label="登录有效期（天）" aria-describedby="settingsJwtExpiryResult" id="settingsJwtExpiryDays" class="settings-input" min="1" max="365" step="1" value="30" oninput="scheduleNumericPreferenceSave('jwtExpiryDays')" onblur="saveJwtExpiryDays()" onkeydown="if (event.key === 'Enter') { event.preventDefault(); saveJwtExpiryDays(); }" />
                 <span class="settings-unit">天</span>
-                <button class="btn btn-sm" onclick="saveJwtExpiryDays()">保存</button>
               </div>
-              <p id="settingsJwtExpiryResult" class="settings-result" style="display:none;"></p>
+              <p id="settingsJwtExpiryResult" class="settings-result" role="status" aria-live="polite" style="display:none;"></p>
             </div>
             <div class="settings-divider"></div>
             <div class="settings-section">
               <h3 class="settings-section-title">备份保留数量</h3>
-              <p class="settings-desc">设置自动清理时最多保留的备份数量，设为 0 表示不限制。</p>
+              <p class="settings-desc">设置自动清理时最多保留的备份数量，修改后自动保存。设为 0 表示不限制。</p>
               <div class="settings-inline-group">
-                <input type="number" id="settingsMaxBackups" class="settings-input" min="0" max="1000" value="100" />
+                <input type="number" aria-label="备份保留数量" aria-describedby="settingsMaxBackupsResult" id="settingsMaxBackups" class="settings-input" min="0" max="1000" step="1" value="100" oninput="scheduleNumericPreferenceSave('maxBackups')" onblur="saveMaxBackups()" onkeydown="if (event.key === 'Enter') { event.preventDefault(); saveMaxBackups(); }" />
                 <span class="settings-unit">条</span>
-                <button class="btn btn-sm" onclick="saveMaxBackups()">保存</button>
               </div>
-              <p id="settingsMaxBackupsResult" class="settings-result" style="display:none;"></p>
+              <p id="settingsMaxBackupsResult" class="settings-result" role="status" aria-live="polite" style="display:none;"></p>
             </div>
             <div class="settings-divider"></div>
             <div class="settings-section" id="settingsPwaSection">
               <h3 class="settings-section-title">安装到桌面</h3>
               <p class="settings-desc">以应用形式将 2FA Manager 添加到主屏幕或桌面，支持离线访问。</p>
-              <button class="btn btn-primary btn-sm" id="settingsPwaInstallBtn" onclick="triggerPwaInstallFromSettings()" title="暂不可用（浏览器未触发安装提示）" disabled>📱 安装到桌面</button>
+              <button class="btn btn-primary btn-sm" id="settingsPwaInstallBtn" onclick="triggerPwaInstallFromSettings()" title="暂不可用（浏览器未触发安装提示）" disabled>安装到桌面</button>
             </div>
           </div>
         </div>
       </div>
+      <div class="settings-modal-actions"><button type="button" class="btn btn-primary" data-i18n="completed" onclick="hideSettingsModal()">完成</button></div>
     </div>
   </div>
 
   <!-- 二维码模态框 -->
-  <div id="qrModal" class="modal" style="display: none;">
+  <div id="qrModal" class="modal" role="dialog" aria-modal="true" style="display: none;" aria-labelledby="qrTitle">
     <div class="modal-content">
       <div class="modal-header">
         <h2 id="qrTitle">二维码</h2>
-        <button class="close-btn" onclick="hideQRModal()">&times;</button>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideQRModal()">${dialogIcon('close')}</button>
       </div>
 
       <div class="qr-subtitle-section">
@@ -1300,7 +1314,7 @@ function getHTMLBody() {
       </div>
 
       <div class="qr-info">
-        💡 使用任意2FA应用扫描二维码即可添加此账户<br>
+        使用任意2FA应用扫描二维码即可添加此账户<br>
         支持：Google Authenticator、Microsoft Authenticator、Authy等
       </div>
     </div>
@@ -1309,23 +1323,23 @@ function getHTMLBody() {
       <!-- 中间提示组件 -->
   <div id="centerToast" class="center-toast">
     <div class="toast-content">
-      <div class="toast-icon">✅</div>
+      <div class="toast-icon"></div>
       <div class="toast-message">验证码已复制到剪贴板</div>
     </div>
   </div>
 
   <!-- 导出格式选择模态框 -->
-  <div id="exportFormatModal" class="modal fab-modal">
+  <div id="exportFormatModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="exportFormatModalTitle">
     <div class="modal-content export-modal-compact">
       <div class="modal-header">
-        <h2>选择导出格式</h2>
-        <button class="close-btn" onclick="hideExportFormatModal()">&times;</button>
+        <h2 id="exportFormatModalTitle">选择导出格式</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideExportFormatModal()">${dialogIcon('close')}</button>
       </div>
 
       <div class="export-summary">
         <span class="export-count">共 <strong id="exportCount">0</strong> 个密钥</span>
         <div class="export-sort-wrapper">
-          <span class="export-sort-label">导出顺序</span>
+          <label class="export-sort-label" for="exportSortOrder">导出顺序</label>
           <select id="exportSortOrder" class="export-sort-select">
             <option value="index-asc">最早添加</option>
             <option value="index-desc">最晚添加</option>
@@ -1335,37 +1349,37 @@ function getHTMLBody() {
             <option value="account-desc">账户名称 Z-A</option>
           </select>
         </div>
-        <button id="exportUseDefaultBtn" class="btn btn-sm" onclick="exportUsingDefaultFormat()" style="margin-left: auto;">按默认格式导出</button>
+        <button id="exportUseDefaultBtn" class="btn btn-sm" onclick="exportUsingDefaultFormat()">按默认格式导出</button>
       </div>
 
       <!-- 通用格式 -->
       <div class="format-section">
         <div class="format-section-title">通用格式</div>
         <div class="format-grid">
-          <div class="format-card" onclick="selectExportFormat('txt')">
-            <span class="format-icon">🔓</span>
+          <button type="button" class="format-card" onclick="selectExportFormat('txt')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">OTPAuth</span>
             <span class="format-ext">.txt</span>
             <span class="format-compat">通用</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('json')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('json')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">JSON</span>
             <span class="format-ext">.json</span>
             <span class="format-compat">通用</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('csv')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('csv')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">CSV</span>
             <span class="format-ext">.csv</span>
             <span class="format-compat">Excel</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('html')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('html')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">HTML</span>
             <span class="format-ext">.html</span>
             <span class="format-compat">打印/扫码</span>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -1373,90 +1387,90 @@ function getHTMLBody() {
       <div class="format-section">
         <div class="format-section-title">验证器应用</div>
         <div class="format-grid">
-          <div class="format-card" onclick="selectExportFormat('google')">
-            <span class="format-icon">🔓</span>
+          <button type="button" class="format-card" onclick="selectExportFormat('google')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">Google</span>
             <span class="format-ext">迁移</span>
             <span class="format-compat">iOS/Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('2fas')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('2fas')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">2FAS</span>
             <span class="format-ext">.2fas</span>
             <span class="format-compat">iOS/Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('aegis-multi')">
-            <span class="format-icon">🛡️</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('aegis-multi')">
+            <span class="format-icon">${dialogIcon('lock')}</span>
             <span class="format-name">Aegis</span>
-            <span class="format-ext">⚙️ 多种格式</span>
+            <span class="format-ext">多种格式</span>
             <span class="format-compat">Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('andotp')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('andotp')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">andOTP</span>
             <span class="format-ext">.json</span>
             <span class="format-compat">Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('authpro-multi')">
-            <span class="format-icon">🛡️</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('authpro-multi')">
+            <span class="format-icon">${dialogIcon('lock')}</span>
             <span class="format-name">Auth Pro</span>
-            <span class="format-ext">⚙️ 多种格式</span>
+            <span class="format-ext">多种格式</span>
             <span class="format-compat">全平台</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('bitwarden-auth-multi')">
-            <span class="format-icon">🛡️</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('bitwarden-auth-multi')">
+            <span class="format-icon">${dialogIcon('lock')}</span>
             <span class="format-name">Bitwarden Auth</span>
-            <span class="format-ext">⚙️ 多种格式</span>
+            <span class="format-ext">多种格式</span>
             <span class="format-compat">全平台</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('ente-auth')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('ente-auth')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">Ente Auth</span>
             <span class="format-ext">.txt</span>
             <span class="format-compat">iOS/Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('freeotp')">
-            <span class="format-icon">🔐</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('freeotp')">
+            <span class="format-icon">${dialogIcon('code')}</span>
             <span class="format-name">FreeOTP</span>
             <span class="format-ext">.xml</span>
             <span class="format-compat">Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('freeotp-plus-multi')">
-            <span class="format-icon">🛡️</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('freeotp-plus-multi')">
+            <span class="format-icon">${dialogIcon('lock')}</span>
             <span class="format-name">FreeOTP+</span>
-            <span class="format-ext">⚙️ 多种格式</span>
+            <span class="format-ext">多种格式</span>
             <span class="format-compat">Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('lastpass')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('lastpass')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">LastPass</span>
             <span class="format-ext">.json</span>
             <span class="format-compat">iOS/Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('proton')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('proton')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">Proton</span>
             <span class="format-ext">.json</span>
             <span class="format-compat">iOS/Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('totp-auth')">
-            <span class="format-icon">🔐</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('totp-auth')">
+            <span class="format-icon">${dialogIcon('code')}</span>
             <span class="format-name">TOTP Auth</span>
             <span class="format-ext">.encrypt</span>
             <span class="format-compat">Android</span>
-          </div>
-          <div class="format-card" onclick="selectExportFormat('winauth')">
-            <span class="format-icon">🔓</span>
+          </button>
+          <button type="button" class="format-card" onclick="selectExportFormat('winauth')">
+            <span class="format-icon">${dialogIcon('file')}</span>
             <span class="format-name">WinAuth</span>
             <span class="format-ext">.txt</span>
             <span class="format-compat">Windows</span>
-          </div>
+          </button>
         </div>
       </div>
 
       <!-- 格式说明（可折叠） -->
       <details class="format-details">
-        <summary>💡 查看格式说明与兼容性</summary>
+        <summary>查看格式说明与兼容性</summary>
         <div class="format-help-content">
           <p><strong>OTPAuth</strong> 标准 URI 格式 → Google/Microsoft/Authy/Aegis/2FAS/andOTP/FreeOTP/Ente Auth/WinAuth 等</p>
           <p><strong>JSON</strong> 结构化数据 → 本应用、程序处理</p>
@@ -1484,11 +1498,11 @@ function getHTMLBody() {
   </div>
 
   <!-- 二级格式选择模态框 -->
-  <div id="subFormatModal" class="modal fab-modal-sm">
+  <div id="subFormatModal" class="modal fab-modal-sm" role="dialog" aria-modal="true" aria-labelledby="subFormatTitle">
     <div class="modal-content sub-format-modal">
       <div class="modal-header">
         <h2 id="subFormatTitle">选择导出格式</h2>
-        <button class="close-btn" onclick="hideSubFormatModal()">&times;</button>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideSubFormatModal()">${dialogIcon('close')}</button>
       </div>
       <div class="sub-format-list" id="subFormatList">
         <!-- 动态生成格式选项 -->
@@ -1497,18 +1511,18 @@ function getHTMLBody() {
   </div>
 
   <!-- FreeOTP 原版导出密码模态框 -->
-  <div id="freeotpExportModal" class="modal fab-modal-sm">
+  <div id="freeotpExportModal" class="modal fab-modal-sm" role="dialog" aria-modal="true" aria-labelledby="freeotpExportModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>🔒 FreeOTP 加密导出</h2>
-        <button class="close-btn" onclick="hideFreeOTPExportModal()">&times;</button>
+        <h2 id="freeotpExportModalTitle">FreeOTP 加密导出</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideFreeOTPExportModal()">${dialogIcon('close')}</button>
       </div>
 
-      <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 8px; font-size: 14px;">
+      <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 4px; font-size: var(--dialog-body-size);">
         <p style="margin: 0 0 10px 0; color: var(--text-primary);">
-          📱 <strong>导出 <span id="freeotpExportCount">0</span> 个密钥到 FreeOTP</strong>
+          <strong>导出 <span id="freeotpExportCount">0</span> 个密钥到 FreeOTP</strong>
         </p>
-        <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">
+        <p style="margin: 0; font-size: var(--dialog-caption-size); color: var(--text-secondary);">
           设置加密密码保护您的备份文件。<br>
           导入到 FreeOTP 时需要输入相同的密码。
         </p>
@@ -1521,24 +1535,24 @@ function getHTMLBody() {
 
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" onclick="hideFreeOTPExportModal()">取消</button>
-        <button type="button" class="btn btn-primary" onclick="executeFreeOTPExport()">🔐 加密导出</button>
+        <button type="button" class="btn btn-primary" onclick="executeFreeOTPExport()">加密导出</button>
       </div>
     </div>
   </div>
 
   <!-- TOTP Authenticator 导出密码模态框 -->
-  <div id="totpAuthExportModal" class="modal fab-modal-sm">
+  <div id="totpAuthExportModal" class="modal fab-modal-sm" role="dialog" aria-modal="true" aria-labelledby="totpAuthExportModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>⏱️ TOTP Authenticator 加密导出</h2>
-        <button class="close-btn" onclick="hideTOTPAuthExportModal()">&times;</button>
+        <h2 id="totpAuthExportModalTitle">TOTP Authenticator 加密导出</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideTOTPAuthExportModal()">${dialogIcon('close')}</button>
       </div>
 
-      <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 8px; font-size: 14px;">
+      <div style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 4px; font-size: var(--dialog-body-size);">
         <p style="margin: 0 0 10px 0; color: var(--text-primary);">
-          📱 <strong>导出 <span id="totpAuthExportCount">0</span> 个密钥到 TOTP Authenticator</strong>
+          <strong>导出 <span id="totpAuthExportCount">0</span> 个密钥到 TOTP Authenticator</strong>
         </p>
-        <p style="margin: 0; font-size: 13px; color: var(--text-secondary);">
+        <p style="margin: 0; font-size: var(--dialog-caption-size); color: var(--text-secondary);">
           设置加密密码保护您的备份文件。<br>
           导入到 TOTP Authenticator 时需要输入相同的密码。
         </p>
@@ -1551,22 +1565,22 @@ function getHTMLBody() {
 
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" onclick="hideTOTPAuthExportModal()">取消</button>
-        <button type="button" class="btn btn-primary" onclick="executeTOTPAuthExport()">🔐 加密导出</button>
+        <button type="button" class="btn btn-primary" onclick="executeTOTPAuthExport()">加密导出</button>
       </div>
     </div>
   </div>
 
   <!-- 备份导出格式选择模态框 -->
-  <div id="backupExportFormatModal" class="modal fab-modal">
+  <div id="backupExportFormatModal" class="modal fab-modal" role="dialog" aria-modal="true" aria-labelledby="backupExportFormatModalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>📤 选择备份导出格式</h2>
-        <button class="close-btn" onclick="hideBackupExportFormatModal()">&times;</button>
+        <h2 id="backupExportFormatModalTitle">选择备份导出格式</h2>
+        <button class="close-btn" type="button" aria-label="关闭弹窗" onclick="hideBackupExportFormatModal()">${dialogIcon('close')}</button>
       </div>
 
-      <div class="export-instructions" style="margin-bottom: 20px; padding: 15px; background: var(--bg-secondary); border-radius: 8px; font-size: 14px;">
+      <div class="export-instructions">
         <p style="margin: 0; color: var(--text-primary);">
-          💡 <strong>导出选中的备份文件</strong><br>
+          <strong>导出选中的备份文件</strong><br>
           <small style="color: var(--text-secondary);">请选择您需要的导出格式，不同格式适用于不同的场景。设置页中的默认导出格式也会用于新创建的备份文件和远程自动备份。</small>
         </p>
         <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
@@ -1574,75 +1588,48 @@ function getHTMLBody() {
         </div>
       </div>
 
-      <div class="export-formats">
-        <div class="format-option" onclick="selectBackupExportFormat('txt')" style="cursor: pointer; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border-primary); border-radius: 8px; transition: all 0.2s; background: var(--bg-primary);" onmouseover="this.style.borderColor='#4CAF50'; this.style.background='var(--bg-hover)'" onmouseout="this.style.borderColor='var(--border-primary)'; this.style.background='var(--bg-primary)'">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="font-size: 32px;">📝</div>
-            <div style="flex: 1;">
-              <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px; color: var(--text-primary);">OTPAuth 文本格式</div>
-              <div style="font-size: 13px; color: var(--text-secondary);">标准 otpauth:// URLs，兼容大多数2FA应用</div>
-              <div style="font-size: 12px; color: var(--success); margin-top: 4px;">✓ Google Authenticator · Authy · Microsoft Authenticator</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-option" onclick="selectBackupExportFormat('json')" style="cursor: pointer; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border-primary); border-radius: 8px; transition: all 0.2s; background: var(--bg-primary);" onmouseover="this.style.borderColor='#4CAF50'; this.style.background='var(--bg-hover)'" onmouseout="this.style.borderColor='var(--border-primary)'; this.style.background='var(--bg-primary)'">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="font-size: 32px;">📋</div>
-            <div style="flex: 1;">
-              <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px; color: var(--text-primary);">JSON 数据格式</div>
-              <div style="font-size: 13px; color: var(--text-secondary);">包含完整信息的结构化数据，适合程序处理</div>
-              <div style="font-size: 12px; color: var(--info); margin-top: 4px;">✓ 完整数据 · 易于解析 · 支持元数据</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-option" onclick="selectBackupExportFormat('csv')" style="cursor: pointer; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border-primary); border-radius: 8px; transition: all 0.2s; background: var(--bg-primary);" onmouseover="this.style.borderColor='#4CAF50'; this.style.background='var(--bg-hover)'" onmouseout="this.style.borderColor='var(--border-primary)'; this.style.background='var(--bg-primary)'">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="font-size: 32px;">📊</div>
-            <div style="flex: 1;">
-              <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px; color: var(--text-primary);">CSV 表格格式</div>
-              <div style="font-size: 13px; color: var(--text-secondary);">可用 Excel、Numbers 打开，方便查看和编辑</div>
-              <div style="font-size: 12px; color: var(--warning); margin-top: 4px;">✓ Excel · Numbers · Google Sheets</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="format-option" onclick="selectBackupExportFormat('html')" style="cursor: pointer; padding: 15px; margin-bottom: 12px; border: 2px solid var(--border-primary); border-radius: 8px; transition: all 0.2s; background: var(--bg-primary);" onmouseover="this.style.borderColor='#4CAF50'; this.style.background='var(--bg-hover)'" onmouseout="this.style.borderColor='var(--border-primary)'; this.style.background='var(--bg-primary)'">
-          <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="font-size: 32px;">🌐</div>
-            <div style="flex: 1;">
-              <div style="font-weight: 600; font-size: 16px; margin-bottom: 4px; color: var(--text-primary);">HTML 网页格式</div>
-              <div style="font-size: 13px; color: var(--text-secondary);">优先生成内嵌二维码的独立网页，条目过多时会自动保留表格和可恢复数据</div>
-              <div style="font-size: 12px; color: var(--danger); margin-top: 4px;">✓ 优先内嵌二维码 · 美观排版 · 可打印</div>
-            </div>
-          </div>
-        </div>
+      <div class="dialog-backup-formats">
+        <button type="button" class="dialog-backup-format" onclick="selectBackupExportFormat('txt')">
+          ${dialogIcon('file')}
+          <span><strong>OTPAuth 文本格式</strong><small>标准 otpauth:// 链接，兼容多数验证器</small></span>
+        </button>
+        <button type="button" class="dialog-backup-format" onclick="selectBackupExportFormat('json')">
+          ${dialogIcon('code')}
+          <span><strong>JSON 数据格式</strong><small>完整的结构化数据，适合备份和恢复</small></span>
+        </button>
+        <button type="button" class="dialog-backup-format" onclick="selectBackupExportFormat('csv')">
+          ${dialogIcon('grid')}
+          <span><strong>CSV 表格格式</strong><small>使用 Excel、Numbers 等电子表格查看</small></span>
+        </button>
+        <button type="button" class="dialog-backup-format" onclick="selectBackupExportFormat('html')">
+          ${dialogIcon('qr')}
+          <span><strong>HTML 网页格式</strong><small>可打印的二维码网页；数据较多时保留表格和恢复数据</small></span>
+        </button>
       </div>
 
-      <div class="form-actions" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-primary);">
-        <button type="button" class="btn btn-secondary" onclick="hideBackupExportFormatModal()" style="padding: 12px 24px; font-size: 14px;">取消</button>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="hideBackupExportFormatModal()">取消</button>
       </div>
     </div>
   </div>
 
   <!-- 登录模态框 -->
-  <div id="loginModal" class="modal login-modal">
+  <div id="loginModal" class="modal login-modal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
     <div class="modal-content login-modal-content">
-      <h2 class="login-modal-title">🔐 身份验证</h2>
+      <h2 class="login-modal-title" id="loginModalTitle" data-i18n="loginModalTitle">身份验证</h2>
       <p class="login-modal-description">
-        请输入密码以管理密钥<br>
-        <small class="login-modal-hint">或点击"取消"使用 OTP 生成功能</small>
+        <span data-i18n="loginModalDesc">请输入密码以管理密钥</span><br>
+        <small class="login-modal-hint" data-i18n="loginModalCancelHint">或点击"取消"使用 OTP 生成功能</small>
       </p>
       <div id="loginInsecureWarning" class="login-insecure-warning" style="display: none;">
-        <strong>⚠️ 当前正通过 HTTP 访问</strong>
-        浏览器无法在 HTTP 下保存登录状态，登录后仍会反复要求输入密码。请将地址栏中的 http:// 改为 https:// 后重新访问。
+        <strong data-i18n="loginInsecureTitle">当前正通过 HTTP 访问</strong>
+        <span data-i18n="loginInsecureDesc">浏览器无法在 HTTP 下保存登录状态，登录后仍会反复要求输入密码。请将地址栏中的 http:// 改为 https:// 后重新访问。</span>
       </div>
       <form id="loginForm" onsubmit="event.preventDefault(); handleLoginSubmit(); return false;" autocomplete="on">
       <div class="form-group">
-        <label for="loginToken">密码</label>
+        <label for="loginToken" data-i18n="loginPasswordLabel">密码</label>
         <div class="login-password-wrapper">
-          <input type="password" id="loginToken" placeholder="请输入您的密码" autocomplete="current-password" name="password">
+          <input type="password" id="loginToken" placeholder="请输入您的密码" data-i18n-placeholder="loginPasswordPlaceholder" autocomplete="current-password" name="password">
           <button
             type="button"
             id="loginPasswordToggle"
@@ -1676,19 +1663,19 @@ function getHTMLBody() {
             </svg>
           </button>
         </div>
-        <div class="login-modal-hint">
+        <div class="login-modal-hint" data-i18n="loginHint">
           提示：输入您设置的密码
         </div>
       </div>
+      <div id="loginError" class="login-modal-error" role="alert" aria-live="polite"></div>
       <div class="button-group login-modal-actions">
-        <button type="button" onclick="window.location.href='/otp'" class="btn btn-secondary login-modal-cancel-btn">
+        <button type="button" onclick="window.location.href='/otp'" class="btn btn-secondary login-modal-cancel-btn" data-i18n="cancel">
           取消
         </button>
-        <button type="submit" class="btn btn-primary login-modal-submit-btn">
+        <button type="submit" class="btn btn-primary login-modal-submit-btn" data-i18n="loginSubmitBtn">
           登录
         </button>
       </div>
-      <div id="loginError" class="login-modal-error"></div>
       </form>
     </div>
   </div>
@@ -1724,39 +1711,39 @@ function getHTMLBody() {
   <!-- 固定悬浮按钮组 -->
   <!-- 操作菜单按钮 -->
   <div class="action-menu-float">
-    <button class="main-action-button" id="mainActionBtn" onclick="toggleActionMenu()" title="操作菜单">
-      ➕
+    <button class="main-action-button" id="mainActionBtn" aria-label="打开操作菜单" aria-expanded="false" aria-controls="actionSubmenu" onclick="toggleActionMenu()" title="操作菜单">
+      ${dialogIcon('plus')}
     </button>
 
     <div class="action-submenu" id="actionSubmenu">
-      <div class="submenu-item" onclick="showQRScanner(); closeActionMenu();">
-        <span class="item-icon">📷</span>
-        <span class="item-text">扫二维码</span>
-      </div>
-      <div class="submenu-item" onclick="showAddModal(); closeActionMenu();">
-        <span class="item-icon">➕</span>
-        <span class="item-text">手动添加</span>
-      </div>
-      <div class="submenu-item" onclick="showImportModal(); closeActionMenu();">
-        <span class="item-icon">📥</span>
-        <span class="item-text">批量导入</span>
-      </div>
-      <div class="submenu-item" onclick="exportAllSecrets(); closeActionMenu();">
-        <span class="item-icon">📤</span>
-        <span class="item-text">批量导出</span>
-      </div>
-      <div class="submenu-item" onclick="showRestoreModal(); closeActionMenu();">
-        <span class="item-icon">🔄</span>
-        <span class="item-text">还原配置</span>
-      </div>
-      <div class="submenu-item" onclick="showToolsModal(); closeActionMenu();">
-        <span class="item-icon">🔧</span>
-        <span class="item-text">实用工具</span>
-      </div>
-      <div class="submenu-item" onclick="showSettingsModal(); closeActionMenu();">
-        <span class="item-icon">⚙️</span>
-        <span class="item-text">系统设置</span>
-      </div>
+      <button type="button" class="submenu-item" onclick="showQRScanner(); closeActionMenu();">
+        <span class="item-icon">${dialogIcon('qr')}</span>
+        <span class="item-text" data-i18n="fabScanQR">扫二维码</span>
+      </button>
+      <button type="button" class="submenu-item" onclick="showAddModal(); closeActionMenu();">
+        <span class="item-icon">${dialogIcon('plus')}</span>
+        <span class="item-text" data-i18n="fabAddSecret">手动添加</span>
+      </button>
+      <button type="button" class="submenu-item" onclick="showImportModal(); closeActionMenu();">
+        <span class="item-icon">${dialogIcon('import')}</span>
+        <span class="item-text" data-i18n="fabImport">批量导入</span>
+      </button>
+      <button type="button" class="submenu-item" onclick="exportAllSecrets(); closeActionMenu();">
+        <span class="item-icon">${dialogIcon('export')}</span>
+        <span class="item-text" data-i18n="fabExport">批量导出</span>
+      </button>
+      <button type="button" class="submenu-item" onclick="showRestoreModal(); closeActionMenu();">
+        <span class="item-icon">${dialogIcon('restore')}</span>
+        <span class="item-text" data-i18n="fabBackup">还原配置</span>
+      </button>
+      <button type="button" class="submenu-item" onclick="showToolsModal(); closeActionMenu();">
+        <span class="item-icon">${dialogIcon('toolbox')}</span>
+        <span class="item-text" data-i18n="fabTools">实用工具</span>
+      </button>
+      <button type="button" class="submenu-item" onclick="showSettingsModal(); closeActionMenu();">
+        <span class="item-icon">${dialogIcon('settings')}</span>
+        <span class="item-text" data-i18n="fabSettings">系统设置</span>
+      </button>
     </div>
   </div>
 
